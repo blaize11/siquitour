@@ -10,6 +10,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* SiquiTour brand palette — shared with the mobile app for visual consistency */
+  --color-primary: #0e7c7b;
+  --color-primary-dark: #0a5f5e;
+  --color-accent: #f2a65a;
+  --color-surface: #ffffff;
+  --color-border: #e4e0d8;
+  --color-muted: #6b7373;
+  --color-danger: #c4453b;
+  --color-success: #2e8b57;
+  --color-warning: #d08a2a;
 }
 
 @media (prefers-color-scheme: dark) {
