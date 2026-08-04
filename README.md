@@ -10,8 +10,8 @@ See [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md) for the full tech stack, architec
 SiquiTour/
   apps/mobile        React Native + Expo + TypeScript app
   apps/admin         Next.js + TypeScript + Tailwind admin dashboard
-  backend/laravel-api Laravel 12 REST API
-  database           PostgreSQL schema, migrations, seeders
+  backend/laravel-api Laravel 13 REST API
+  database           MySQL schema, migrations, seeders
   docs               Planning docs, SRS, ERD, API specs
   design             UI/UX design files
   docker             Local dev containers
