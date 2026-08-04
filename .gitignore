@@ -1,0 +1,19 @@
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Local Claude Code permission/session state (machine-specific, not shared)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Defense-in-depth: each app already ignores these in its own .gitignore,
+# but catch them anywhere in the tree too.
+node_modules/
+vendor/
+.env
+.env.*.local
+*.log
