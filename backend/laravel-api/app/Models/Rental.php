@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['renter_id', 'type', 'title', 'description', 'price_per_day', 'latitude', 'longitude', 'address', 'status'])]
+#[Fillable(['renter_id', 'type', 'other_label', 'title', 'description', 'price_per_day', 'latitude', 'longitude', 'address', 'status'])]
 class Rental extends Model
 {
     protected function casts(): array

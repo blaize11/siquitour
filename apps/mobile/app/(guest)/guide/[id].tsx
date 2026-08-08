@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useGuide } from '../../../src/api/queries/guides';
+import { useGuide, useGuideBookedDates } from '../../../src/api/queries/guides';
 import { useCreateBooking } from '../../../src/api/queries/bookings';
 import { useFollowUser, useUnfollowUser } from '../../../src/api/queries/social';
 import { useStartConversation } from '../../../src/api/queries/chat';
 import {
   Button,
+  Calendar,
   Card,
-  DateField,
   ErrorView,
   LoadingView,
   RatingStars,
@@ -24,6 +24,7 @@ export default function GuideDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const guideId = Number(id);
   const { data: guide, isLoading, isError, error, refetch } = useGuide(guideId);
+  const { data: bookedDatesData } = useGuideBookedDates(guideId);
 
   const followMutation = useFollowUser();
   const unfollowMutation = useUnfollowUser();
@@ -32,6 +33,7 @@ export default function GuideDetailScreen() {
 
   const [paxCount, setPaxCount] = useState('1');
   const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState<string | undefined>();
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
@@ -50,8 +52,8 @@ export default function GuideDetailScreen() {
       setBookingError('Enter how many pax will join.');
       return;
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
-      setBookingError('Enter the tour date as YYYY-MM-DD.');
+    if (!startDate) {
+      setBookingError('Please select a tour date.');
       return;
     }
     try {
@@ -60,6 +62,7 @@ export default function GuideDetailScreen() {
         bookable_id: guideId,
         pax_count: pax,
         start_date: startDate,
+        end_date: endDate,
       });
       setBookingSuccess(true);
     } catch (err) {
@@ -103,7 +106,21 @@ export default function GuideDetailScreen() {
       <Card style={{ gap: spacing.sm }}>
         <Text style={typography.subtitle}>Book this guide</Text>
         <TextField label="Number of pax" value={paxCount} onChangeText={setPaxCount} keyboardType="number-pad" />
-        <DateField label="Tour date" value={startDate} onChange={setStartDate} minimumDate={new Date()} />
+
+        <View>
+          <Text style={[typography.caption, { marginBottom: spacing.xs }]}>Tour dates</Text>
+          <Calendar
+            startDate={startDate}
+            endDate={endDate}
+            onSelectDateRange={(start, end) => {
+              setStartDate(start);
+              setEndDate(end);
+            }}
+            bookedDates={bookedDatesData?.booked_dates ?? []}
+            minimumDate={new Date()}
+          />
+        </View>
+
         {bookingError && <Text style={{ color: colors.danger }}>{bookingError}</Text>}
         {bookingSuccess && (
           <Text style={{ color: colors.success }}>Booking request sent! Check "Bookings" for updates.</Text>

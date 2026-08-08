@@ -9,6 +9,8 @@ export async function createSpot(_prevState: SpotFormState, formData: FormData):
   const category = String(formData.get('category') ?? 'spot');
   const name = String(formData.get('name') ?? '').trim();
   const description = String(formData.get('description') ?? '').trim();
+  const latitude = String(formData.get('latitude') ?? '').trim();
+  const longitude = String(formData.get('longitude') ?? '').trim();
 
   if (!name) {
     return { error: 'Name is required.' };
@@ -17,7 +19,13 @@ export async function createSpot(_prevState: SpotFormState, formData: FormData):
   try {
     await apiFetch('/admin/spots', {
       method: 'POST',
-      body: { category, name, description: description || undefined },
+      body: {
+        category,
+        name,
+        description: description || undefined,
+        latitude: latitude ? parseFloat(latitude) : undefined,
+        longitude: longitude ? parseFloat(longitude) : undefined,
+      },
     });
   } catch (err) {
     return { error: err instanceof ApiError ? err.message : 'Unable to add this spot.' };

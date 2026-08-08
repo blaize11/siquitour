@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRental } from '../../../src/api/queries/rentals';
+import { useRentalBookedDates } from '../../../src/api/queries/rentals';
 import { useCreateBooking } from '../../../src/api/queries/bookings';
 import { useStartConversation } from '../../../src/api/queries/chat';
 import {
   Button,
+  Calendar,
   Card,
-  DateField,
   ErrorView,
   LoadingView,
   ScreenContainer,
@@ -21,12 +22,13 @@ export default function RentalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const rentalId = Number(id);
   const { data: rental, isLoading, isError, error, refetch } = useRental(rentalId);
+  const { data: bookedDatesData } = useRentalBookedDates(rentalId);
 
   const startConversation = useStartConversation();
   const createBooking = useCreateBooking();
 
   const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [endDate, setEndDate] = useState<string | undefined>();
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
@@ -74,13 +76,18 @@ export default function RentalDetailScreen() {
 
       <Card style={{ gap: spacing.sm }}>
         <Text style={typography.subtitle}>Book this rental</Text>
-        <DateField label="Start date" value={startDate} onChange={setStartDate} minimumDate={new Date()} />
-        <DateField
-          label="End date (optional)"
-          value={endDate}
-          onChange={setEndDate}
-          minimumDate={startDate ? new Date(`${startDate}T00:00:00`) : new Date()}
+
+        <Calendar
+          startDate={startDate}
+          endDate={endDate}
+          onSelectDateRange={(start, end) => {
+            setStartDate(start);
+            setEndDate(end);
+          }}
+          bookedDates={bookedDatesData?.booked_dates ?? []}
+          minimumDate={new Date()}
         />
+
         {bookingError && <Text style={{ color: colors.danger }}>{bookingError}</Text>}
         {bookingSuccess && (
           <Text style={{ color: colors.success }}>Booking request sent! Check "Bookings" for updates.</Text>

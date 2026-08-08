@@ -16,3 +16,11 @@ export function useGuide(id: number) {
     enabled: Number.isFinite(id),
   });
 }
+
+export function useGuideBookedDates(id: number) {
+  return useQuery({
+    queryKey: ['guides', id, 'booked-dates'],
+    queryFn: () => apiFetch<{ booked_dates: string[] }>(`/guides/${id}/booked-dates`),
+    enabled: Number.isFinite(id),
+  });
+}

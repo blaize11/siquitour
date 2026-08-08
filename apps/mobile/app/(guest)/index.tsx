@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useGuides } from '../../src/api/queries/guides';
 import { useRentals } from '../../src/api/queries/rentals';
 import { useSpots } from '../../src/api/queries/spots';
+import { SiquiTourMap, LocationCard } from '../../src/components/map';
 import {
   Card,
   EmptyState,
@@ -16,27 +17,46 @@ import {
   typography,
 } from '../../src/components';
 import { extractErrorMessage } from '../../src/components/ErrorView';
+import type { MapLocation } from '../../src/types/api';
 
-type Section = 'guides' | 'rentals' | 'spots';
+type Section = 'guides' | 'rentals' | 'spots' | 'map';
 
 const sections: { key: Section; label: string }[] = [
   { key: 'guides', label: 'Tour Guides' },
   { key: 'rentals', label: 'Rentals' },
   { key: 'spots', label: 'Spots & Food' },
+  { key: 'map', label: 'Map' },
 ];
 
 export default function ExploreScreen() {
   const [section, setSection] = useState<Section>('guides');
+  const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
 
   return (
-    <ScreenContainer scroll={false}>
-      <Text style={typography.title}>Explore Siquijor</Text>
+    <ScreenContainer scroll={false} style={{ gap: section === 'map' ? 0 : spacing.md }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+        <Text style={typography.title}>Explore Siquijor</Text>
+        <Pressable
+          onPress={() => router.push('/(guest)/search')}
+          style={{
+            paddingHorizontal: spacing.sm,
+            paddingVertical: spacing.xs,
+            borderRadius: radius.md,
+            backgroundColor: colors.surface,
+          }}
+        >
+          <Text style={{ fontSize: 20 }}>🔍</Text>
+        </Pressable>
+      </View>
 
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         {sections.map((item) => (
           <Pressable
             key={item.key}
-            onPress={() => setSection(item.key)}
+            onPress={() => {
+              setSection(item.key);
+              setSelectedLocation(null);
+            }}
             style={{
               paddingVertical: spacing.xs,
               paddingHorizontal: spacing.sm,
@@ -56,7 +76,96 @@ export default function ExploreScreen() {
       {section === 'guides' && <GuidesList />}
       {section === 'rentals' && <RentalsList />}
       {section === 'spots' && <SpotsList />}
+      {section === 'map' && <MapView selectedLocation={selectedLocation} onLocationSelect={setSelectedLocation} />}
     </ScreenContainer>
+  );
+}
+
+interface MapViewProps {
+  selectedLocation: MapLocation | null;
+  onLocationSelect: (location: MapLocation | null) => void;
+}
+
+function MapView({ selectedLocation, onLocationSelect }: MapViewProps) {
+  const { data: guidesData } = useGuides();
+  const { data: rentalsData } = useRentals();
+  const { data: spotsData } = useSpots();
+
+  const guideLocations: MapLocation[] = (guidesData?.data || [])
+    .filter((guide) => guide.tour_guide_profile)
+    .map((guide) => ({
+      id: guide.id,
+      name: guide.name,
+      category: 'tour_guide',
+      latitude: 9.2142,
+      longitude: 123.515,
+      description: guide.tour_guide_profile?.bio,
+      type: 'Tour Guide',
+      rate_per_pax: guide.tour_guide_profile?.rate_per_pax,
+    }));
+
+  const rentalLocations: MapLocation[] = (rentalsData?.data || [])
+    .filter((rental) => rental.latitude && rental.longitude)
+    .map((rental) => ({
+      id: rental.id,
+      name: rental.title,
+      category: 'rental',
+      latitude: rental.latitude || 0,
+      longitude: rental.longitude || 0,
+      description: rental.description,
+      address: rental.address,
+      type: rental.type,
+      price_per_day: rental.price_per_day,
+    }));
+
+  const spotLocations: MapLocation[] = (spotsData?.data || [])
+    .filter((spot) => spot.latitude && spot.longitude)
+    .map((spot) => ({
+      id: spot.id,
+      name: spot.name,
+      category: spot.category,
+      latitude: spot.latitude || 0,
+      longitude: spot.longitude || 0,
+      description: spot.description,
+    }));
+
+  const displayLocations = [...guideLocations, ...rentalLocations, ...spotLocations];
+
+  const handleViewDetails = (location: MapLocation) => {
+    if (location.category === 'tour_guide') {
+      router.push(`/(guest)/guide/${location.id}`);
+    } else if (location.category === 'rental') {
+      router.push(`/(guest)/rental/${location.id}`);
+    }
+    onLocationSelect(null);
+  };
+
+  const handleBook = (location: MapLocation) => {
+    if (location.category === 'tour_guide') {
+      router.push(`/(guest)/guide/${location.id}`);
+    } else if (location.category === 'rental') {
+      router.push(`/(guest)/rental/${location.id}`);
+    }
+    onLocationSelect(null);
+  };
+
+  return (
+    <View style={{ flex: 1, position: 'relative' }}>
+      <SiquiTourMap
+        locations={displayLocations}
+        onMarkerPress={onLocationSelect}
+        showUserLocation={true}
+        height="100%"
+      />
+      {selectedLocation && (
+        <LocationCard
+          location={selectedLocation}
+          onClose={() => onLocationSelect(null)}
+          onViewDetails={handleViewDetails}
+          onBook={handleBook}
+        />
+      )}
+    </View>
   );
 }
 

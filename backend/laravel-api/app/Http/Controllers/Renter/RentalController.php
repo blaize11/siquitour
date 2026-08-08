@@ -20,7 +20,8 @@ class RentalController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'type' => ['required', Rule::in(['motorbike', 'car', 'tuktuk', 'van', 'bicycle', 'room'])],
+            'type' => ['required', Rule::in(['motorbike', 'car', 'tuktuk', 'van', 'bicycle', 'room', 'camera', 'other'])],
+            'other_label' => ['required_if:type,other', 'nullable', 'string', 'max:255'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:4000'],
             'price_per_day' => ['required', 'numeric', 'min:0'],
@@ -39,7 +40,8 @@ class RentalController extends Controller
         $this->assertOwner($request, $rental);
 
         $validated = $request->validate([
-            'type' => ['sometimes', Rule::in(['motorbike', 'car', 'tuktuk', 'van', 'bicycle', 'room'])],
+            'type' => ['sometimes', Rule::in(['motorbike', 'car', 'tuktuk', 'van', 'bicycle', 'room', 'camera', 'other'])],
+            'other_label' => ['required_if:type,other', 'nullable', 'string', 'max:255'],
             'title' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:4000'],
             'price_per_day' => ['sometimes', 'numeric', 'min:0'],

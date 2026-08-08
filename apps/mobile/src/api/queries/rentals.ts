@@ -16,3 +16,11 @@ export function useRental(id: number) {
     enabled: Number.isFinite(id),
   });
 }
+
+export function useRentalBookedDates(id: number) {
+  return useQuery({
+    queryKey: ['rentals', id, 'booked-dates'],
+    queryFn: () => apiFetch<{ booked_dates: string[]; rental_id: number; rental_name: string }>(`/rentals/${id}/booked-dates`),
+    enabled: Number.isFinite(id),
+  });
+}

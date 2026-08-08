@@ -36,7 +36,7 @@ export interface RenterProfile {
   updated_at: string;
 }
 
-export type RentalType = 'motorbike' | 'car' | 'tuktuk' | 'van' | 'bicycle' | 'room';
+export type RentalType = 'motorbike' | 'car' | 'tuktuk' | 'van' | 'bicycle' | 'room' | 'camera' | 'other';
 
 export interface RentalImage {
   id: number;
@@ -49,6 +49,7 @@ export interface Rental {
   id: number;
   renter_id: number;
   type: RentalType;
+  other_label: string | null;
   title: string;
   description: string | null;
   price_per_day: string;
@@ -160,4 +161,19 @@ export interface Paginated<T> {
   last_page: number;
   per_page: number;
   total: number;
+}
+
+// Map-related types
+export interface MapLocation {
+  id: number;
+  name: string;
+  category: string;
+  latitude: number | string;
+  longitude: number | string;
+  description?: string;
+  address?: string;
+  image?: string;
+  type?: string;
+  price_per_day?: string | number;
+  rate_per_pax?: string | number;
 }

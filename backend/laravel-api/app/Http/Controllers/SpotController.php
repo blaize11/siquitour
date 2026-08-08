@@ -9,9 +9,23 @@ class SpotController extends Controller
 {
     public function index(Request $request)
     {
-        $spots = Spot::query()
-            ->when($request->query('category'), fn ($query, $category) => $query->where('category', $category))
-            ->paginate(20);
+        $query = Spot::query();
+
+        // Filter by category (spot, restaurant, etc.)
+        if ($request->filled('category')) {
+            $query->where('category', $request->input('category'));
+        }
+
+        // Search by name or description
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $spots = $query->latest()->paginate(20);
 
         return response()->json($spots);
     }

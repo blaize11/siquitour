@@ -11,6 +11,7 @@ use App\Http\Controllers\FollowController;
 use App\Http\Controllers\Guide\AvailabilityController;
 use App\Http\Controllers\Guide\ProfileController as GuideProfileController;
 use App\Http\Controllers\GuideController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Renter\RentalController as RenterRentalController;
@@ -22,11 +23,20 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Location endpoints (for address selection)
+Route::get('/locations/provinces', [LocationController::class, 'provinces']);
+Route::get('/locations/municipalities/{provinceId}', [LocationController::class, 'municipalities']);
+Route::get('/locations/barangays/{municipalityId}', [LocationController::class, 'barangays']);
+Route::get('/locations/landmarks/{barangayId}', [LocationController::class, 'landmarks']);
+Route::get('/locations/details/{barangayId}', [LocationController::class, 'locationDetails']);
+
 // Public browse.
 Route::get('/guides', [GuideController::class, 'index']);
 Route::get('/guides/{guide}', [GuideController::class, 'show']);
+Route::get('/guides/{guide}/booked-dates', [GuideController::class, 'bookedDates']);
 Route::get('/rentals', [RentalController::class, 'index']);
 Route::get('/rentals/{rental}', [RentalController::class, 'show']);
+Route::get('/rentals/{rental}/booked-dates', [RentalController::class, 'bookedDates']);
 Route::get('/spots', [SpotController::class, 'index']);
 Route::get('/spots/{spot}', [SpotController::class, 'show']);
 
