@@ -12,3 +12,5 @@ export * from './DateField';
 export * from './Calendar';
 export * from './LocationSelector';
 export * from './ImagePicker';
+export * from './cards';
+export { ImageCarousel } from './ImageCarousel';
