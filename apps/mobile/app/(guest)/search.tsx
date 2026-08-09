@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSearchGuides, useSearchRentals, useSearchSpots } from '../../src/api/queries/search';
 import {
-  Button,
-  Card,
+  TourGuideCard,
+  RentalCard,
+  SpotCard,
   ErrorView,
   LoadingView,
   ScreenContainer,
   colors,
-  radius,
   spacing,
   typography,
 } from '../../src/components';
@@ -17,7 +17,7 @@ import { router } from 'expo-router';
 
 type SearchTab = 'guides' | 'rentals' | 'spots';
 
-const RENTAL_TYPES = ['motorbike', 'car', 'tuktuk', 'van', 'bicycle', 'room', 'camera', 'other'];
+const RENTAL_TYPES = ['motorbike', 'scooter', 'bicycle', 'atv'];
 const SPOT_CATEGORIES = ['spot', 'restaurant', 'beach', 'attraction'];
 
 export default function SearchScreen() {
@@ -55,247 +55,346 @@ export default function SearchScreen() {
     router.push(`/(guest)/spot/${spot.id}`);
   };
 
-  const GuideItem = ({ item }: { item: User }) => (
-    <Pressable onPress={() => handleGuidePress(item)}>
-      <Card style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>{item.name}</Text>
-        <Text style={typography.body}>{item.tour_guide_profile?.bio}</Text>
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <Text style={typography.caption}>⭐ {item.tour_guide_profile?.years_experience} yrs exp</Text>
-          <Text style={typography.caption}>₱{item.tour_guide_profile?.rate_per_pax}/pax</Text>
-        </View>
-      </Card>
-    </Pressable>
-  );
+  const isLoading = guidesQuery.isLoading || rentalsQuery.isLoading || spotsQuery.isLoading;
+  const isError = guidesQuery.isError || rentalsQuery.isError || spotsQuery.isError;
 
-  const RentalItem = ({ item }: { item: Rental }) => (
-    <Pressable onPress={() => handleRentalPress(item)}>
-      <Card style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>{item.title}</Text>
-        <Text style={[typography.body, { textTransform: 'capitalize' }]}>{item.type}</Text>
-        <Text style={typography.caption}>{item.description}</Text>
-        <Text style={typography.subtitle}>₱{item.price_per_day}/day</Text>
-      </Card>
-    </Pressable>
-  );
+  const results =
+    tab === 'guides'
+      ? guidesQuery.data?.data || []
+      : tab === 'rentals'
+        ? rentalsQuery.data?.data || []
+        : spotsQuery.data?.data || [];
 
-  const SpotItem = ({ item }: { item: Spot }) => (
-    <Pressable onPress={() => handleSpotPress(item)}>
-      <Card style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>{item.name}</Text>
-        <Text style={[typography.body, { textTransform: 'capitalize' }]}>{item.category}</Text>
-        <Text style={typography.caption}>{item.description}</Text>
-      </Card>
-    </Pressable>
-  );
+  const tabs = [
+    { key: 'guides', label: 'Tour Guides', icon: '👤' },
+    { key: 'rentals', label: 'Rentals', icon: '🏍️' },
+    { key: 'spots', label: 'Spots', icon: '📍' },
+  ];
 
   return (
-    <ScreenContainer>
-      {/* Search Header */}
-      <View style={{ gap: spacing.sm, marginBottom: spacing.md }}>
-        <Text style={typography.title}>Search</Text>
+    <ScreenContainer scroll={false} style={{ padding: 0 }}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>←</Text>
+        </Pressable>
+        <Text style={styles.headerTitle}>Search</Text>
+        <View style={{ width: 32 }} />
+      </View>
 
-        {/* Search Input */}
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: radius.md,
-            paddingHorizontal: spacing.sm,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.xs,
-          }}
-        >
-          <Text style={{ fontSize: 18 }}>🔍</Text>
+      {/* Search Input */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputWrapper}>
+          <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
-            placeholder="Search..."
+            style={styles.searchInput}
+            placeholder={`Search ${tab}...`}
+            placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            style={{ flex: 1, paddingVertical: spacing.sm, color: colors.text }}
-            placeholderTextColor={colors.border}
           />
-        </View>
-
-        {/* Tabs */}
-        <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-          {(['guides', 'rentals', 'spots'] as const).map((tabName) => (
-            <Pressable
-              key={tabName}
-              onPress={() => {
-                setTab(tabName);
-                setSearchQuery('');
-                setSelectedType('');
-                setSelectedCategory('');
-                setMaxPrice('');
-              }}
-              style={{
-                flex: 1,
-                paddingVertical: spacing.sm,
-                borderRadius: radius.sm,
-                backgroundColor: tab === tabName ? colors.primary : colors.surface,
-                alignItems: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  color: tab === tabName ? '#fff' : colors.text,
-                  fontWeight: '600',
-                  textTransform: 'capitalize',
-                }}
-              >
-                {tabName}
-              </Text>
+          {searchQuery && (
+            <Pressable onPress={() => setSearchQuery('')}>
+              <Text style={styles.clearIcon}>✕</Text>
             </Pressable>
-          ))}
+          )}
         </View>
       </View>
 
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        <FlatList
+          data={tabs}
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => {
+                setTab(item.key as SearchTab);
+                setSelectedType('');
+                setSelectedCategory('');
+              }}
+              style={[
+                styles.tab,
+                tab === item.key && styles.tabActive,
+              ]}
+            >
+              <Text style={styles.tabIcon}>{item.icon}</Text>
+              <Text style={[styles.tabLabel, tab === item.key && styles.tabLabelActive]}>
+                {item.label}
+              </Text>
+            </Pressable>
+          )}
+          keyExtractor={(item) => item.key}
+          horizontal
+          scrollEnabled={false}
+          contentContainerStyle={styles.tabsList}
+        />
+      </View>
+
       {/* Filters */}
-      {tab === 'rentals' && (
-        <View style={{ gap: spacing.sm, marginBottom: spacing.md }}>
-          <Text style={typography.caption}>Type</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-            {RENTAL_TYPES.map((type) => (
+      {(tab === 'rentals' || tab === 'spots') && (
+        <View style={styles.filtersContainer}>
+          <FlatList
+            data={tab === 'rentals' ? RENTAL_TYPES : SPOT_CATEGORIES}
+            renderItem={({ item }) => (
               <Pressable
-                key={type}
-                onPress={() => setSelectedType(selectedType === type ? '' : type)}
-                style={{
-                  paddingVertical: spacing.xs,
-                  paddingHorizontal: spacing.sm,
-                  borderRadius: radius.sm,
-                  backgroundColor: selectedType === type ? colors.primary : colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
+                onPress={() => {
+                  if (tab === 'rentals') {
+                    setSelectedType(selectedType === item ? '' : item);
+                  } else {
+                    setSelectedCategory(selectedCategory === item ? '' : item);
+                  }
                 }}
+                style={[
+                  styles.filterChip,
+                  (tab === 'rentals' ? selectedType === item : selectedCategory === item) &&
+                    styles.filterChipActive,
+                ]}
               >
                 <Text
-                  style={{
-                    color: selectedType === type ? '#fff' : colors.text,
-                    textTransform: 'capitalize',
-                    fontSize: 12,
-                  }}
+                  style={[
+                    styles.filterChipText,
+                    (tab === 'rentals' ? selectedType === item : selectedCategory === item) &&
+                      styles.filterChipTextActive,
+                  ]}
                 >
-                  {type}
+                  {item.charAt(0).toUpperCase() + item.slice(1)}
                 </Text>
               </Pressable>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {tab === 'spots' && (
-        <View style={{ gap: spacing.sm, marginBottom: spacing.md }}>
-          <Text style={typography.caption}>Category</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-            {SPOT_CATEGORIES.map((category) => (
-              <Pressable
-                key={category}
-                onPress={() => setSelectedCategory(selectedCategory === category ? '' : category)}
-                style={{
-                  paddingVertical: spacing.xs,
-                  paddingHorizontal: spacing.sm,
-                  borderRadius: radius.sm,
-                  backgroundColor: selectedCategory === category ? colors.primary : colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <Text
-                  style={{
-                    color: selectedCategory === category ? '#fff' : colors.text,
-                    textTransform: 'capitalize',
-                    fontSize: 12,
-                  }}
-                >
-                  {category}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {(tab === 'rentals' || tab === 'guides') && (
-        <View style={{ marginBottom: spacing.md, gap: spacing.xs }}>
-          <Text style={typography.caption}>Max Price: {maxPrice ? `₱${maxPrice}` : 'Any'}</Text>
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: radius.md,
-              paddingHorizontal: spacing.sm,
-            }}
-          >
-            <TextInput
-              placeholder="Enter max price (optional)"
-              value={maxPrice}
-              onChangeText={setMaxPrice}
-              keyboardType="decimal-pad"
-              style={{ paddingVertical: spacing.sm, color: colors.text }}
-              placeholderTextColor={colors.border}
-            />
-          </View>
+            )}
+            keyExtractor={(item) => item}
+            horizontal
+            scrollEnabled={true}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersList}
+          />
         </View>
       )}
 
       {/* Results */}
-      {tab === 'guides' && (
-        <>
-          {guidesQuery.isLoading && <LoadingView />}
-          {guidesQuery.isError && <ErrorView message="Failed to load guides" onRetry={guidesQuery.refetch} />}
-          {guidesQuery.data && guidesQuery.data.data.length === 0 && (
-            <Text style={typography.body}>No guides found</Text>
-          )}
-          {guidesQuery.data && (
-            <FlatList
-              data={guidesQuery.data.data}
-              renderItem={({ item }) => <GuideItem item={item} />}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-              ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-            />
-          )}
-        </>
+      {isLoading && <LoadingView />}
+      {isError && <ErrorView message="Search failed" />}
+
+      {!isLoading && !isError && results.length === 0 && (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateIcon}>
+            {tab === 'guides' ? '👤' : tab === 'rentals' ? '🏍️' : '📍'}
+          </Text>
+          <Text style={styles.emptyStateText}>No results found</Text>
+          <Text style={styles.emptyStateSubtext}>Try a different search term</Text>
+        </View>
       )}
 
-      {tab === 'rentals' && (
-        <>
-          {rentalsQuery.isLoading && <LoadingView />}
-          {rentalsQuery.isError && <ErrorView message="Failed to load rentals" onRetry={rentalsQuery.refetch} />}
-          {rentalsQuery.data && rentalsQuery.data.data.length === 0 && (
-            <Text style={typography.body}>No rentals found</Text>
-          )}
-          {rentalsQuery.data && (
-            <FlatList
-              data={rentalsQuery.data.data}
-              renderItem={({ item }) => <RentalItem item={item} />}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-              ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-            />
-          )}
-        </>
-      )}
+      {!isLoading && !isError && results.length > 0 && (
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.resultsList}>
+          <View style={styles.resultsContent}>
+            {tab === 'guides' &&
+              (results as User[]).map((guide) => (
+                <Pressable
+                  key={guide.id}
+                  onPress={() => handleGuidePress(guide)}
+                  style={{ marginBottom: spacing.md }}
+                >
+                  <TourGuideCard
+                    id={guide.id}
+                    name={guide.name}
+                    imageUrl={guide.profile_image_url}
+                    rating={guide.tour_guide_profile?.rating || 0}
+                    reviewCount={guide.tour_guide_profile?.review_count || 0}
+                    experience={`${guide.tour_guide_profile?.years_experience || 0} yrs`}
+                    pricePerPax={guide.tour_guide_profile?.rate_per_pax || 0}
+                    verified={guide.tour_guide_profile?.verified || false}
+                    onPress={() => handleGuidePress(guide)}
+                  />
+                </Pressable>
+              ))}
 
-      {tab === 'spots' && (
-        <>
-          {spotsQuery.isLoading && <LoadingView />}
-          {spotsQuery.isError && <ErrorView message="Failed to load spots" onRetry={spotsQuery.refetch} />}
-          {spotsQuery.data && spotsQuery.data.data.length === 0 && (
-            <Text style={typography.body}>No spots found</Text>
-          )}
-          {spotsQuery.data && (
-            <FlatList
-              data={spotsQuery.data.data}
-              renderItem={({ item }) => <SpotItem item={item} />}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-              ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-            />
-          )}
-        </>
+            {tab === 'rentals' &&
+              (results as Rental[]).map((rental) => (
+                <Pressable
+                  key={rental.id}
+                  onPress={() => handleRentalPress(rental)}
+                  style={{ marginBottom: spacing.md }}
+                >
+                  <RentalCard
+                    id={rental.id}
+                    title={rental.title}
+                    type={rental.type}
+                    imageUrl={rental.image_url}
+                    pricePerDay={rental.price_per_day}
+                    rating={rental.rating || 0}
+                    reviewCount={rental.review_count || 0}
+                    transmission={rental.transmission}
+                    engineSize={rental.engine_size}
+                    onPress={() => handleRentalPress(rental)}
+                  />
+                </Pressable>
+              ))}
+
+            {tab === 'spots' &&
+              (results as Spot[]).map((spot) => (
+                <Pressable
+                  key={spot.id}
+                  onPress={() => handleSpotPress(spot)}
+                  style={{ marginBottom: spacing.md }}
+                >
+                  <SpotCard
+                    id={spot.id}
+                    name={spot.name}
+                    imageUrl={spot.image_url}
+                    category={spot.category}
+                    rating={spot.rating}
+                    reviewCount={spot.review_count}
+                    distance={spot.distance}
+                    municipality={spot.municipality}
+                    onPress={() => handleSpotPress(spot)}
+                  />
+                </Pressable>
+              ))}
+          </View>
+
+          <View style={{ height: spacing.lg }} />
+        </ScrollView>
       )}
     </ScreenContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  backButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  searchContainer: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchIcon: {
+    fontSize: 18,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    fontSize: 15,
+    color: colors.text,
+  },
+  clearIcon: {
+    fontSize: 18,
+    color: colors.textMuted,
+  },
+  tabsContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tabsList: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.md,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: colors.primary,
+  },
+  tabIcon: {
+    fontSize: 18,
+  },
+  tabLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textMuted,
+  },
+  tabLabelActive: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  filtersContainer: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  filtersList: {
+    gap: spacing.sm,
+  },
+  filterChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text,
+  },
+  filterChipTextActive: {
+    color: '#fff',
+  },
+  resultsList: {
+    flex: 1,
+  },
+  resultsContent: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  emptyStateIcon: {
+    fontSize: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+});
