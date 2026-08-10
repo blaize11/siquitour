@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMyRentals } from '../../src/api/queries/renter';
-import { useProfile } from '../../src/api/queries/profile';
+import { useSession } from '../../src/auth/SessionContext';
 import { RentalCard, Button, LoadingView, ErrorView, ScreenContainer, colors, spacing, typography } from '../../src/components';
 import { extractErrorMessage } from '../../src/components/ErrorView';
 
@@ -16,10 +17,10 @@ const RENTAL_FILTERS: { key: RentalFilter; label: string }[] = [
 ];
 
 export default function RenterHomeScreen() {
+  const { user: currentProfile } = useSession();
   const { data: rentalsData, isLoading: rentalsLoading, isError: rentalsError, error: rentalsErrorMsg, refetch: refetchRentals } = useMyRentals();
-  const { data: profileData } = useProfile();
-  const [filter, setFilter] = React.useState<RentalFilter>('all');
-  const [searchText, setSearchText] = React.useState('');
+  const [filter, setFilter] = useState<RentalFilter>('all');
+  const [searchText, setSearchText] = useState('');
 
   const isLoading = rentalsLoading;
   const isError = rentalsError;
@@ -29,7 +30,6 @@ export default function RenterHomeScreen() {
   if (isError) return <ErrorView message={extractErrorMessage(errorMsg)} onRetry={refetchRentals} />;
 
   const rentals = rentalsData?.data || [];
-  const currentProfile = profileData?.data;
 
   // Filter rentals
   let filteredRentals = rentals;
