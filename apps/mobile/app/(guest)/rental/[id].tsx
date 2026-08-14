@@ -118,9 +118,9 @@ export default function RentalDetailScreen() {
             <Text style={styles.sectionTitle}>Rental Provider</Text>
             <View style={styles.ownerCard}>
               <View style={styles.ownerInfo}>
-                {rental.renter.profile_image_url ? (
+                {rental.renter.avatar_url ? (
                   <Image
-                    source={{ uri: rental.renter.profile_image_url }}
+                    source={{ uri: rental.renter.avatar_url }}
                     style={styles.ownerAvatar}
                   />
                 ) : (

@@ -112,7 +112,7 @@ export default function ExploreScreen() {
   }
 
   return (
-    <ScreenContainer scroll={false} style={{ padding: 0 }}>
+    <ScreenContainer scroll={true} style={{ padding: 0 }}>
       {/* Header */}
       <View style={styles.headerContainer}>
         <View style={styles.header}>
@@ -129,7 +129,7 @@ export default function ExploreScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <View>
         {/* Filters */}
         <View style={styles.filtersContainer}>
           <FlatList
@@ -174,7 +174,7 @@ export default function ExploreScreen() {
                   key={guide.id}
                   id={guide.id}
                   name={guide.name}
-                  imageUrl={guide.profile_image_url}
+                  imageUrl={guide.avatar_url}
                   rating={guide.tour_guide_profile?.rating || 0}
                   reviewCount={guide.tour_guide_profile?.review_count || 0}
                   experience={`${guide.tour_guide_profile?.years_experience || 0} yrs experience`}
@@ -253,7 +253,7 @@ export default function ExploreScreen() {
         </View>
 
         <View style={{ height: spacing.lg }} />
-      </ScrollView>
+      </View>
     </ScreenContainer>
   );
 }

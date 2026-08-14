@@ -83,8 +83,7 @@ export default function SearchScreen() {
       </View>
 
       {/* Search Input */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputWrapper}>
+      <View style={styles.searchContainer}><View style={styles.searchInputWrapper}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.searchInput}
@@ -98,8 +97,7 @@ export default function SearchScreen() {
               <Text style={styles.clearIcon}>✕</Text>
             </Pressable>
           )}
-        </View>
-      </View>
+        </View></View>
 
       {/* Tabs */}
       <View style={styles.tabsContainer}>
@@ -197,7 +195,7 @@ export default function SearchScreen() {
                   <TourGuideCard
                     id={guide.id}
                     name={guide.name}
-                    imageUrl={guide.profile_image_url}
+                    imageUrl={guide.avatar_url}
                     rating={guide.tour_guide_profile?.rating || 0}
                     reviewCount={guide.tour_guide_profile?.review_count || 0}
                     experience={`${guide.tour_guide_profile?.years_experience || 0} yrs`}

@@ -83,8 +83,20 @@ export function useCreateReview() {
 export function usePayBooking() {
   const invalidate = useInvalidateBookings();
   return useMutation({
-    mutationFn: (bookingId: number) =>
-      apiFetch<{ checkout_url: string }>(`/bookings/${bookingId}/pay`, { method: 'POST' }),
+    mutationFn: (bookingId: number, options?: { payment_type?: string; payment_method?: string }) =>
+      apiFetch<{ checkout_url: string }>(`/bookings/${bookingId}/pay`, {
+        method: 'POST',
+        body: options || {}
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useReplyToReview() {
+  const invalidate = useInvalidateBookings();
+  return useMutation({
+    mutationFn: ({ reviewId, reply }: { reviewId: number; reply: string }) =>
+      apiFetch<Review>(`/reviews/${reviewId}/reply`, { method: 'POST', body: { reply } }),
     onSuccess: invalidate,
   });
 }

@@ -83,8 +83,8 @@ export default function GuideDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Image */}
         <View style={styles.imageContainer}>
-          {guide.profile_image_url ? (
-            <Image source={{ uri: guide.profile_image_url }} style={styles.profileImage} />
+          {guide.avatar_url ? (
+            <Image source={{ uri: guide.avatar_url }} style={styles.profileImage} />
           ) : (
             <View style={[styles.profileImage, styles.profileImagePlaceholder]}>
               <Text style={styles.placeholderText}>👤</Text>

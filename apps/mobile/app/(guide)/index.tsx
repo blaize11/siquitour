@@ -1,4 +1,4 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   useAcceptBooking,
@@ -59,14 +59,14 @@ export default function GuideHomeScreen() {
   };
 
   return (
-    <ScreenContainer scroll={false} style={{ padding: 0 }}>
+    <ScreenContainer scroll={true} style={{ padding: 0 }}>
       {/* Header with Profile */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           {/* Profile Photo */}
-          {currentGuide?.profile_image_url ? (
+          {currentGuide?.avatar_url ? (
             <Image
-              source={{ uri: currentGuide.profile_image_url }}
+              source={{ uri: currentGuide.avatar_url }}
               style={styles.profileImage}
             />
           ) : (
@@ -89,7 +89,7 @@ export default function GuideHomeScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <View>
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <QuickActionButton
@@ -192,7 +192,7 @@ export default function GuideHomeScreen() {
         )}
 
         <View style={{ height: spacing.lg }} />
-      </ScrollView>
+      </View>
     </ScreenContainer>
   );
 }

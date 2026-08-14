@@ -14,9 +14,11 @@ use App\Http\Controllers\GuideController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Renter\RentalController as RenterRentalController;
 use App\Http\Controllers\RentalController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SpotController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +48,7 @@ Route::post('/webhooks/paymongo', [PaymentController::class, 'webhook']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
 
     // Bookings.
     Route::get('/bookings', [BookingController::class, 'index']);
@@ -63,6 +66,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/users/{user}/follow', [FollowController::class, 'destroy']);
     Route::post('/users/{user}/block', [BlockController::class, 'store']);
     Route::delete('/users/{user}/block', [BlockController::class, 'destroy']);
+
+    // Reviews.
+    Route::get('/reviews', [ReviewController::class, 'index']); // Tour guide reviews
+    Route::get('/reviews/my-reviews', [ReviewController::class, 'getGuestReviews']); // Guest posted reviews
+    Route::patch('/reviews/{review}/reply', [ReviewController::class, 'reply']); // Tour guide reply
+    Route::patch('/reviews/{review}/renter-reply', [ReviewController::class, 'renterReply']); // Renter reply
+
+    // Notifications.
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
 
     // Chat.
     Route::get('/conversations', [ConversationController::class, 'index']);
@@ -86,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/rentals/{rental}', [RenterRentalController::class, 'destroy']);
         Route::post('/rentals/{rental}/images', [RenterRentalController::class, 'addImage']);
         Route::delete('/rentals/{rental}/images/{image}', [RenterRentalController::class, 'deleteImage']);
+        Route::get('/reviews', [ReviewController::class, 'getRenterReviews']);
     });
 
     // Admin management.

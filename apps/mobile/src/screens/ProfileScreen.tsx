@@ -1,10 +1,28 @@
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as ExpoImagePicker from 'expo-image-picker';
 import { useSession } from '../auth/SessionContext';
+import { useUpdateAvatar } from '../api/queries/profile';
 import { Button, RoleBadge, ScreenContainer, colors, spacing, typography } from '../components';
 
+function getMimeType(fileName: string): string {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  const mimeMap: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+  };
+  return mimeMap[ext] || 'image/jpeg';
+}
+
 export function ProfileScreen({ children }: { children?: ReactNode }) {
-  const { user, logout } = useSession();
+  const { user, logout, refreshUser } = useSession();
+  const updateAvatar = useUpdateAvatar();
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -14,25 +32,84 @@ export function ProfileScreen({ children }: { children?: ReactNode }) {
     .join('')
     .toUpperCase();
 
+  const handleAvatarPress = async () => {
+    try {
+      setUploadError(null);
+      const result = await ExpoImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const fileName = asset.fileName || asset.uri.split('/').pop() || `avatar-${Date.now()}.jpg`;
+
+        // Derive MIME type from file extension or use asset.type if available
+        const mimeType = asset.type || getMimeType(fileName);
+
+        // Show local preview immediately (optimistic)
+        setLocalAvatarUri(asset.uri);
+
+        try {
+          await updateAvatar.mutateAsync({
+            uri: asset.uri,
+            name: fileName,
+            type: mimeType,
+          });
+          // Refresh the entire user state after successful upload
+          await refreshUser();
+          setLocalAvatarUri(null); // Clear optimistic state
+        } catch (err) {
+          console.error('Avatar upload error:', err);
+          setUploadError(err instanceof Error ? err.message : 'Failed to upload avatar');
+          setLocalAvatarUri(null); // Clear optimistic state on error
+        }
+      }
+    } catch (err) {
+      console.error('Image picker error:', err);
+      setUploadError(err instanceof Error ? err.message : 'Failed to pick image');
+    }
+  };
+
   return (
-    <ScreenContainer scroll={false} style={{ padding: 0 }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <ScreenContainer scroll={true} style={{ padding: 0 }}>
+      <View style={styles.profileContent}>
         {/* Profile Header */}
         <View style={styles.profileHeader}>
-          {/* Profile Image */}
-          {user.profile_image_url ? (
-            <Image source={{ uri: user.profile_image_url }} style={styles.profileImage} />
-          ) : (
-            <View style={[styles.profileImage, styles.profileImagePlaceholder]}>
-              <Text style={styles.initialsText}>{initials}</Text>
+          {/* Profile Image with Edit Badge */}
+          <Pressable onPress={handleAvatarPress} style={styles.avatarContainer}>
+            {localAvatarUri || user.avatar_url ? (
+              <Image source={{ uri: localAvatarUri || user.avatar_url }} style={styles.profileImage} />
+            ) : (
+              <View style={[styles.profileImage, styles.profileImagePlaceholder]}>
+                <Text style={styles.initialsText}>{initials}</Text>
+              </View>
+            )}
+
+            {/* Edit Badge */}
+            <View style={styles.editBadge}>
+              {updateAvatar.isPending ? (
+                <Text style={styles.editBadgeText}>⏳</Text>
+              ) : (
+                <Text style={styles.editBadgeText}>📷</Text>
+              )}
             </View>
-          )}
+          </Pressable>
 
           {/* Role Badge */}
           <View style={styles.roleBadgeContainer}>
             <RoleBadge role={user.role} />
           </View>
         </View>
+
+        {/* Upload Error Message */}
+        {uploadError && (
+          <View style={styles.errorMessage}>
+            <Text style={styles.errorText}>❌ {uploadError}</Text>
+          </View>
+        )}
 
         {/* Profile Info */}
         <View style={styles.infoSection}>
@@ -70,6 +147,7 @@ export function ProfileScreen({ children }: { children?: ReactNode }) {
           <MenuButton icon="🔐" label="Change Password" onPress={() => {}} />
           <MenuButton icon="🔔" label="Notifications" onPress={() => {}} />
           <MenuButton icon="⚙️" label="Preferences" onPress={() => {}} />
+          <MenuButton icon="🚪" label="Log Out" onPress={() => logout()} isDanger />
         </View>
 
         {/* Help & Support */}
@@ -89,7 +167,7 @@ export function ProfileScreen({ children }: { children?: ReactNode }) {
         </View>
 
         <View style={{ height: spacing.lg }} />
-      </ScrollView>
+      </View>
     </ScreenContainer>
   );
 }
@@ -132,14 +210,15 @@ interface MenuButtonProps {
   icon: string;
   label: string;
   onPress: () => void;
+  isDanger?: boolean;
 }
 
-function MenuButton({ icon, label, onPress }: MenuButtonProps) {
+function MenuButton({ icon, label, onPress, isDanger }: MenuButtonProps) {
   return (
     <Pressable onPress={onPress} style={styles.menuButton}>
       <View style={styles.menuButtonContent}>
         <Text style={styles.menuIcon}>{icon}</Text>
-        <Text style={styles.menuLabel}>{label}</Text>
+        <Text style={[styles.menuLabel, isDanger && { color: colors.danger }]}>{label}</Text>
       </View>
       <Text style={styles.menuArrow}>›</Text>
     </Pressable>
@@ -152,6 +231,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl,
     backgroundColor: colors.primary,
     paddingTop: spacing.lg,
+  },
+  avatarContainer: {
+    position: 'relative',
   },
   profileImage: {
     width: 100,
@@ -171,8 +253,36 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
+    borderWidth: 3,
+    borderColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editBadgeText: {
+    fontSize: 18,
+  },
   roleBadgeContainer: {
     marginTop: spacing.md,
+  },
+  errorMessage: {
+    backgroundColor: '#FFE5E5',
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 13,
   },
   infoSection: {
     alignItems: 'center',
@@ -279,5 +389,8 @@ const styles = StyleSheet.create({
   logoutContainer: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.lg,
+  },
+  profileContent: {
+    gap: spacing.md,
   },
 });

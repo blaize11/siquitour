@@ -53,9 +53,9 @@ export default function RenterHomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           {/* Profile Photo */}
-          {currentProfile?.profile_image_url ? (
+          {currentProfile?.avatar_url ? (
             <Image
-              source={{ uri: currentProfile.profile_image_url }}
+              source={{ uri: currentProfile.avatar_url }}
               style={styles.profileImage}
             />
           ) : (

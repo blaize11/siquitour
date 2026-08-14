@@ -7,3 +7,4 @@ export * from './chat';
 export * from './guide';
 export * from './renter';
 export * from './admin';
+export * from './profile';

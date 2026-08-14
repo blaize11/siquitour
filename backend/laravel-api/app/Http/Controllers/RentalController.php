@@ -13,7 +13,7 @@ class RentalController extends Controller
     {
         $query = Rental::query()
             ->where('status', 'active')
-            ->with(['images', 'renter:id,name']);
+            ->with(['images', 'renter:id,name,avatar_url']);
 
         // Filter by type (motorbike, car, room, etc.)
         if ($request->filled('type')) {
@@ -47,7 +47,7 @@ class RentalController extends Controller
 
     public function show(Rental $rental)
     {
-        $rental->load(['images', 'renter:id,name']);
+        $rental->load(['images', 'renter:id,name,avatar_url']);
 
         return response()->json($rental);
     }

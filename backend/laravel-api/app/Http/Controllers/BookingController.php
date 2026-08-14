@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Block;
 use App\Models\Booking;
 use App\Models\CommissionSetting;
+use App\Models\Notification;
 use App\Models\Rental;
 use App\Models\User;
 use Carbon\Carbon;
@@ -82,6 +83,20 @@ class BookingController extends Controller
             'commission_amount' => round($totalPrice * $commissionPercentage / 100, 2),
         ]);
 
+        // Create notification for guide/renter
+        $recipientId = $bookableType === User::class ? $bookableId : Rental::find($bookableId)->renter_id;
+        $bookingType = $bookableType === User::class ? 'tour booking' : 'rental booking';
+
+        Notification::create([
+            'user_id' => $recipientId,
+            'type' => 'booking_request',
+            'title' => 'New Booking Request 📅',
+            'message' => "You have a new {$bookingType} request from {$user->name}. Please review and respond.",
+            'icon' => '📅',
+            'related_id' => $booking->id,
+            'related_type' => 'booking',
+        ]);
+
         return response()->json($booking->load('bookable'), 201);
     }
 
@@ -99,6 +114,17 @@ class BookingController extends Controller
 
         $booking->update(['status' => 'accepted']);
 
+        // Create notification for guest
+        Notification::create([
+            'user_id' => $booking->guest_id,
+            'type' => 'booking_accepted',
+            'title' => 'Booking Accepted ✅',
+            'message' => 'Your booking has been accepted! Check your bookings for more details.',
+            'icon' => '✅',
+            'related_id' => $booking->id,
+            'related_type' => 'booking',
+        ]);
+
         return response()->json($booking);
     }
 
@@ -108,6 +134,17 @@ class BookingController extends Controller
         $this->assertStatus($booking, 'pending');
 
         $booking->update(['status' => 'declined']);
+
+        // Create notification for guest
+        Notification::create([
+            'user_id' => $booking->guest_id,
+            'type' => 'booking_declined',
+            'title' => 'Booking Declined ❌',
+            'message' => 'Unfortunately, your booking has been declined. Try booking another time.',
+            'icon' => '❌',
+            'related_id' => $booking->id,
+            'related_type' => 'booking',
+        ]);
 
         return response()->json($booking);
     }

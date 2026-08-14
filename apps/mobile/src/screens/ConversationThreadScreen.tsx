@@ -41,8 +41,8 @@ export function ConversationThreadScreen({ conversationId }: { conversationId: n
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          {otherUser?.profile_image_url ? (
-            <Image source={{ uri: otherUser.profile_image_url }} style={styles.headerAvatar} />
+          {otherUser?.avatar_url ? (
+            <Image source={{ uri: otherUser.avatar_url }} style={styles.headerAvatar} />
           ) : (
             <View style={[styles.headerAvatar, styles.headerAvatarPlaceholder]}>
               <Text style={styles.headerAvatarText}>

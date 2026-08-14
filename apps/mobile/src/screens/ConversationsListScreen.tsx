@@ -41,9 +41,9 @@ export function ConversationsListScreen({ basePath }: { basePath: string }) {
               <Link href={`${basePath}/chat/${item.id}` as Href} asChild>
                 <Pressable style={styles.conversationCard}>
                   {/* Avatar */}
-                  {other?.profile_image_url ? (
+                  {other?.avatar_url ? (
                     <Image
-                      source={{ uri: other.profile_image_url }}
+                      source={{ uri: other.avatar_url }}
                       style={styles.avatar}
                     />
                   ) : (

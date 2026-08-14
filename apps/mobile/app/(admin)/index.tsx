@@ -148,7 +148,7 @@ export default function AdminDashboardScreen() {
               <View key={booking.id} style={styles.bookingRow}>
                 <View style={styles.bookingInfo}>
                   <View style={styles.guestInfo}>
-                    {booking.guest?.profile_image_url ? (
+                    {booking.guest?.avatar_url ? (
                       <Text style={styles.guestAvatar}>{booking.guest.name.charAt(0)}</Text>
                     ) : (
                       <Text style={styles.guestAvatar}>👤</Text>
