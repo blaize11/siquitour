@@ -22,11 +22,20 @@ class BookingController extends Controller
 
         $query = Booking::query()->with(['guest:id,name', 'bookable']);
 
-        if ($user->role === 'guest') {
+        // Admin can see all bookings
+        if ($user->isRole('admin')) {
+            // Show all bookings
+        }
+        // Guest can only see their own
+        elseif ($user->isRole('guest')) {
             $query->where('guest_id', $user->id);
-        } elseif ($user->role === 'tour_guide') {
+        }
+        // Tour guide can only see bookings for their tours
+        elseif ($user->isRole('tour_guide')) {
             $query->where('bookable_type', User::class)->where('bookable_id', $user->id);
-        } elseif ($user->role === 'renter') {
+        }
+        // Renter can only see bookings for their rentals
+        elseif ($user->isRole('renter')) {
             $query->where('bookable_type', Rental::class)->whereIn('bookable_id', $user->rentals()->pluck('id'));
         }
 
@@ -36,7 +45,7 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        abort_unless($user->role === 'guest', 403, 'Only guests can create bookings.');
+        abort_unless($user->isRole('guest'), 403, 'Only guests can create bookings.');
 
         $validated = $request->validate([
             'bookable_type' => ['required', Rule::in(['guide', 'rental'])],
@@ -49,6 +58,14 @@ class BookingController extends Controller
         if ($validated['bookable_type'] === 'guide') {
             $guide = User::where('role', 'tour_guide')->where('status', 'active')->find($validated['bookable_id']);
             abort_if(! $guide, 404, 'Tour guide not found.');
+
+            // CRITICAL: Self-transaction guard (spec rule #2)
+            abort_if(
+                $guide->id === $user->id,
+                403,
+                'You cannot book from yourself.'
+            );
+
             abort_unless($validated['pax_count'] ?? null, 422, 'pax_count is required when booking a tour guide.');
 
             $this->assertNotBlocked($user, $guide);
@@ -59,6 +76,13 @@ class BookingController extends Controller
         } else {
             $rental = Rental::where('status', 'active')->find($validated['bookable_id']);
             abort_if(! $rental, 404, 'Rental not found.');
+
+            // CRITICAL: Self-transaction guard (spec rule #2)
+            abort_if(
+                $rental->renter_id === $user->id,
+                403,
+                'You cannot book from yourself.'
+            );
 
             $this->assertNotBlocked($user, $rental->renter);
 

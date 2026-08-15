@@ -8,9 +8,68 @@ use App\Models\User;
 
 class BookingPolicy
 {
+    /**
+     * Only guests can create bookings (enforced via middleware).
+     */
+    public function create(User $user): bool
+    {
+        return $user->isRole('guest');
+    }
+
+    /**
+     * Anyone involved can view a booking; admins can view all.
+     */
     public function view(User $user, Booking $booking): bool
     {
-        return $booking->guest_id === $user->id || $this->respond($user, $booking);
+        return $user->isRole('admin')
+            || $booking->guest_id === $user->id
+            || $this->respond($user, $booking);
+    }
+
+    /**
+     * Only the provider can accept a pending booking.
+     */
+    public function accept(User $user, Booking $booking): bool
+    {
+        return $booking->status === 'pending'
+            && $this->respond($user, $booking)
+            && ($user->isRole('tour_guide') || $user->isRole('renter'));
+    }
+
+    /**
+     * Only the provider can decline a pending/accepted booking.
+     */
+    public function decline(User $user, Booking $booking): bool
+    {
+        return in_array($booking->status, ['pending', 'accepted'], true)
+            && $this->respond($user, $booking);
+    }
+
+    /**
+     * Anyone involved or admin can cancel.
+     */
+    public function cancel(User $user, Booking $booking): bool
+    {
+        return $user->isRole('admin')
+            || $booking->guest_id === $user->id
+            || $this->respond($user, $booking);
+    }
+
+    /**
+     * Only provider or admin can mark as completed.
+     */
+    public function complete(User $user, Booking $booking): bool
+    {
+        return $user->isRole('admin')
+            || $this->respond($user, $booking);
+    }
+
+    /**
+     * Admin only: view all bookings index.
+     */
+    public function viewAll(User $user): bool
+    {
+        return $user->isRole('admin');
     }
 
     /**
@@ -28,10 +87,5 @@ class BookingPolicy
         }
 
         return false;
-    }
-
-    public function cancel(User $user, Booking $booking): bool
-    {
-        return $booking->guest_id === $user->id && in_array($booking->status, ['pending', 'accepted'], true);
     }
 }

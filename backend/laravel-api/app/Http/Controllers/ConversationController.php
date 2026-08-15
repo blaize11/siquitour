@@ -34,6 +34,17 @@ class ConversationController extends Controller
         $otherId = (int) $validated['user_id'];
         abort_if($otherId === $user->id, 422, 'You cannot message yourself.');
 
+        // RULE: Block Guest-to-Guest messaging (spec module 6)
+        if ($user->isRole('guest')) {
+            $otherUser = \App\Models\User::find($otherId);
+            abort_if(
+                $otherUser && $otherUser->isRole('guest'),
+                403,
+                'Guests cannot message other guests.'
+            );
+        }
+
+        // Check blocks
         $blocked = Block::where(function ($query) use ($user, $otherId) {
             $query->where('blocker_id', $user->id)->where('blocked_id', $otherId);
         })->orWhere(function ($query) use ($user, $otherId) {

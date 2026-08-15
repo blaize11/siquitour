@@ -1,12 +1,125 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import { apiFetch } from '../client';
 import type { User } from '../../types/api';
+
+export interface GuideInclusion {
+  id: number;
+  label: string;
+  sort_order: number;
+}
+
+export interface TourGuideProfile {
+  id: number;
+  user_id: number;
+  bio?: string;
+  years_experience?: number;
+  rate_per_pax?: number;
+  is_verified: boolean;
+  additional_services?: string;
+  inclusions: GuideInclusion[];
+  created_at: string;
+  updated_at: string;
+}
 
 export interface AvatarUploadInput {
   uri: string;
   name: string;
   type: string;
+}
+
+export function useGetGuideProfile() {
+  return useQuery({
+    queryKey: ['guideProfile'],
+    queryFn: async () => {
+      return apiFetch<TourGuideProfile>('/guide/profile');
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useUpdateGuideProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Partial<TourGuideProfile>) => {
+      return apiFetch<TourGuideProfile>('/guide/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guideProfile'] });
+    },
+  });
+}
+
+export function useAddGuideInclusion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (label: string) => {
+      return apiFetch<TourGuideProfile>('/guide/inclusions', {
+        method: 'POST',
+        body: JSON.stringify({ label }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guideProfile'] });
+    },
+  });
+}
+
+export function useUpdateGuideInclusion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      inclusionId,
+      label,
+      sort_order,
+    }: {
+      inclusionId: number;
+      label?: string;
+      sort_order?: number;
+    }) => {
+      return apiFetch<TourGuideProfile>(`/guide/inclusions/${inclusionId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ label, sort_order }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guideProfile'] });
+    },
+  });
+}
+
+export function useDeleteGuideInclusion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (inclusionId: number) => {
+      return apiFetch<TourGuideProfile>(`/guide/inclusions/${inclusionId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guideProfile'] });
+    },
+  });
+}
+
+export function useReorderGuideInclusions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      inclusions: Array<{ id: number; sort_order: number }>
+    ) => {
+      return apiFetch<TourGuideProfile>('/guide/inclusions/reorder', {
+        method: 'PUT',
+        body: JSON.stringify({ inclusions }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guideProfile'] });
+    },
+  });
 }
 
 export function useUpdateAvatar() {

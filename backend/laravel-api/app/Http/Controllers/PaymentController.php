@@ -14,7 +14,13 @@ class PaymentController extends Controller
 {
     public function pay(Request $request, Booking $booking, PayMongoClient $payMongo)
     {
-        abort_unless($booking->guest_id === $request->user()->id, 403);
+        // CRITICAL RULE: Only guests can pay (spec rule #4 - hard rule)
+        abort_unless($request->user()->isRole('guest'), 403, 'Only guests can pay for bookings.');
+
+        // Verify booking ownership
+        abort_unless($booking->guest_id === $request->user()->id, 403, 'Not your booking.');
+
+        // Verify booking status
         abort_if(in_array($booking->status, ['cancelled', 'declined'], true), 422, 'This booking can no longer be paid for.');
         abort_if($booking->payment && $booking->payment->status === 'paid', 422, 'This booking has already been paid.');
 

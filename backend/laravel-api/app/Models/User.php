@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -93,6 +94,11 @@ class User extends Authenticatable
         return $this->hasMany(Spot::class, 'created_by');
     }
 
+    public function tourPackages(): HasMany
+    {
+        return $this->hasMany(TourPackage::class, 'tour_guide_id');
+    }
+
     public function following(): HasMany
     {
         return $this->hasMany(Follow::class, 'follower_id');
@@ -111,5 +117,48 @@ class User extends Authenticatable
     public function blockedBy(): HasMany
     {
         return $this->hasMany(Block::class, 'blocked_id');
+    }
+
+    // Role management relationships
+    public function userRoles(): HasMany
+    {
+        return $this->hasMany(UserRole::class);
+    }
+
+    public function activeRole(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'active_role_id');
+    }
+
+    public function auditLogsAsAdmin(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'admin_id');
+    }
+
+    /**
+     * Get user's active role name.
+     * Falls back to legacy 'role' column for backwards compatibility.
+     */
+    public function getActivRole(): ?string
+    {
+        return $this->activeRole?->name ?? $this->role;
+    }
+
+    /**
+     * Check if user has a specific role (by name).
+     */
+    public function hasRole($roleName): bool
+    {
+        return $this->userRoles()
+            ->whereHas('role', fn($q) => $q->where('name', $roleName))
+            ->exists();
+    }
+
+    /**
+     * Check if user's active role matches.
+     */
+    public function isRole($roleName): bool
+    {
+        return $this->getActivRole() === $roleName;
     }
 }

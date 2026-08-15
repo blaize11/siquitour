@@ -81,8 +81,16 @@ class ReviewController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($booking->guest_id === $user->id, 403);
+        // RULE: Only guests can review (spec module 8)
+        abort_unless($user->isRole('guest'), 403, 'Only guests can write reviews.');
+
+        // RULE: Must own the booking
+        abort_unless($booking->guest_id === $user->id, 403, 'You can only review your own bookings.');
+
+        // RULE: Booking must be completed (spec module 8)
         abort_unless($booking->status === 'completed', 422, 'Booking must be completed before it can be reviewed.');
+
+        // RULE: One review per booking (spec module 8)
         abort_if($booking->review()->exists(), 422, 'This booking has already been reviewed.');
 
         $validated = $request->validate([

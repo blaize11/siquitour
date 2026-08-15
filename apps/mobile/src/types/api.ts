@@ -170,8 +170,8 @@ export interface MapLocation {
   category: string;
   latitude: number | string;
   longitude: number | string;
-  description?: string;
-  address?: string;
+  description?: string | null;
+  address?: string | null;
   image?: string;
   type?: string;
   price_per_day?: string | number;

@@ -3,6 +3,7 @@ import { deleteSpot } from '@/actions/spots';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { SpotForm } from '@/components/SpotForm';
+import Link from 'next/link';
 import type { Paginated, Spot } from '@/lib/types';
 
 export default async function SpotsPage() {
@@ -34,11 +35,18 @@ export default async function SpotsPage() {
                 <td className="px-4 py-3 capitalize text-muted">{spot.category}</td>
                 <td className="max-w-xs truncate px-4 py-3 text-muted">{spot.description ?? '—'}</td>
                 <td className="px-4 py-3">
-                  <form action={deleteSpot.bind(null, spot.id)}>
-                    <Button type="submit" variant="danger" className="px-2 py-1 text-xs">
-                      Delete
-                    </Button>
-                  </form>
+                  <div className="flex gap-2">
+                    <Link href={`/spots/${spot.id}`}>
+                      <Button variant="outline" className="px-2 py-1 text-xs">
+                        Manage Images
+                      </Button>
+                    </Link>
+                    <form action={deleteSpot.bind(null, spot.id)}>
+                      <Button type="submit" variant="danger" className="px-2 py-1 text-xs">
+                        Delete
+                      </Button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             ))}

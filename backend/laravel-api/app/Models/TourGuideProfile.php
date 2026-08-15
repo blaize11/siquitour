@@ -5,8 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'bio', 'years_experience', 'rate_per_pax', 'is_verified'])]
+#[Fillable(['user_id', 'bio', 'years_experience', 'rate_per_pax', 'is_verified', 'additional_services'])]
 class TourGuideProfile extends Model
 {
     protected function casts(): array
@@ -20,5 +21,12 @@ class TourGuideProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function inclusions(): HasMany
+    {
+        return $this->hasMany(GuideInclusion::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 }
