@@ -34,4 +34,9 @@ class Rental extends Model
     {
         return $this->morphMany(Booking::class, 'bookable');
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
 }
