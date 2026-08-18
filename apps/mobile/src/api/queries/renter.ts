@@ -5,7 +5,17 @@ import type { Paginated, Rental, RentalImage, RentalType } from '../../types/api
 export function useMyRentals() {
   return useQuery({
     queryKey: ['my-rentals'],
-    queryFn: () => apiFetch<Paginated<Rental>>('/renter/rentals'),
+    queryFn: async () => {
+      try {
+        return await apiFetch<Paginated<Rental>>('/renter/rentals');
+      } catch (error: any) {
+        // Suppress 403 errors for non-renter users (guests, guides accessing renter route)
+        if (error?.status === 403) {
+          return { data: [] } as Paginated<Rental>;
+        }
+        throw error;
+      }
+    },
   });
 }
 

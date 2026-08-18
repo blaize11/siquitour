@@ -20,7 +20,17 @@ export function useUpdateGuideProfile() {
 export function useGuideAvailability() {
   return useQuery({
     queryKey: ['guide-availability'],
-    queryFn: () => apiFetch<GuideAvailability[]>('/guide/availability'),
+    queryFn: async () => {
+      try {
+        return await apiFetch<GuideAvailability[]>('/guide/availability');
+      } catch (error: any) {
+        // Suppress 403 errors for non-guide users (guests, renters accessing guide route)
+        if (error?.status === 403) {
+          return [];
+        }
+        throw error;
+      }
+    },
   });
 }
 

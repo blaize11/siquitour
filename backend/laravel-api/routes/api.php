@@ -30,6 +30,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/google-login', [AuthController::class, 'googleLogin']);
+
+// Password reset endpoints
+Route::post('/forgot-password', [AuthController::class, 'requestPasswordReset']);
+Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // Location endpoints (for address selection)
 Route::get('/locations/provinces', [LocationController::class, 'provinces']);

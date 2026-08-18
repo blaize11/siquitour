@@ -41,4 +41,10 @@ return [
         'payment_method_types' => array_filter(explode(',', env('PAYMONGO_PAYMENT_METHODS', 'gcash,card'))),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
 ];

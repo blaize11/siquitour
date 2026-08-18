@@ -11,6 +11,8 @@ export type RegisterInput = {
   phone?: string;
 };
 
+export type PasswordResetStep = 'request' | 'verify' | 'reset';
+
 type SessionContextValue = {
   user: User | null;
   isLoading: boolean;
@@ -18,6 +20,10 @@ type SessionContextValue = {
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  googleLogin: (googleId: string, email: string, name: string, avatar?: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  verifyResetCode: (email: string, code: string) => Promise<void>;
+  resetPassword: (email: string, code: string, password: string, passwordConfirmation: string) => Promise<void>;
 };
 
 const SessionContext = createContext<SessionContextValue | undefined>(undefined);
@@ -77,8 +83,63 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setUser(await apiFetch<User>('/me'));
   }, []);
 
+  const googleLogin = useCallback(async (googleId: string, email: string, name: string, avatar?: string) => {
+    const result = await apiFetch<{ user: User; token: string }>('/google-login', {
+      method: 'POST',
+      body: { google_id: googleId, email, name, avatar },
+    });
+    await tokenStorage.set(result.token);
+    setAuthToken(result.token);
+    setUser(result.user);
+  }, []);
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    await apiFetch('/forgot-password', {
+      method: 'POST',
+      body: { email },
+    });
+  }, []);
+
+  const verifyResetCode = useCallback(async (email: string, code: string) => {
+    await apiFetch('/verify-reset-code', {
+      method: 'POST',
+      body: { email, code },
+    });
+  }, []);
+
+  const resetPassword = useCallback(
+    async (email: string, code: string, password: string, passwordConfirmation: string) => {
+      const result = await apiFetch<{ user: User; token: string }>('/reset-password', {
+        method: 'POST',
+        body: {
+          email,
+          code,
+          password,
+          password_confirmation: passwordConfirmation,
+        },
+      });
+      await tokenStorage.set(result.token);
+      setAuthToken(result.token);
+      setUser(result.user);
+    },
+    []
+  );
+
   return (
-    <SessionContext.Provider value={{ user, isLoading, login, register, logout, refreshUser }}>
+    <SessionContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        register,
+        logout,
+        refreshUser,
+        googleLogin,
+        requestPasswordReset,
+        verifyResetCode,
+        resetPassword,
+      }}
+    >
       {children}
     </SessionContext.Provider>
   );

@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PasswordResetCodeMail;
 use App\Models\RenterProfile;
 use App\Models\TourGuideProfile;
 use App\Models\User;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -84,5 +87,113 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         return response()->json($request->user());
+    }
+
+    /**
+     * Handle Google OAuth login/registration.
+     * Expects the mobile app to send verified Google credentials.
+     */
+    public function googleLogin(Request $request)
+    {
+        $validated = $request->validate([
+            'google_id' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'name' => ['required', 'string', 'max:255'],
+            'avatar' => ['nullable', 'url'],
+        ]);
+
+        $result = AuthService::handleGoogleLogin(
+            $validated['google_id'],
+            $validated['email'],
+            $validated['name'],
+            $validated['avatar'] ?? null
+        );
+
+        $user = $result['user'];
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+        ]);
+    }
+
+    /**
+     * Request a password reset code.
+     * Sends a 6-digit code to the user's email.
+     */
+    public function requestPasswordReset(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $resetCode = AuthService::requestPasswordReset($validated['email']);
+
+        // Send email with reset code
+        Mail::to($validated['email'])->send(
+            new PasswordResetCodeMail(
+                'User', // We don't know the user's name if they don't exist
+                $resetCode->code
+            )
+        );
+
+        // Return privacy-safe message regardless of whether email exists
+        return response()->json([
+            'message' => 'If an account exists for this email, a verification code has been sent.',
+        ]);
+    }
+
+    /**
+     * Verify the password reset code.
+     */
+    public function verifyResetCode(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'string', 'size:6'],
+        ]);
+
+        if (!AuthService::verifyResetCode($validated['email'], $validated['code'])) {
+            throw ValidationException::withMessages([
+                'code' => ['The verification code is incorrect or has expired.'],
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Code verified successfully.',
+        ]);
+    }
+
+    /**
+     * Reset password using verified code.
+     */
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'string', 'size:6'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        try {
+            $user = AuthService::resetPassword(
+                $validated['email'],
+                $validated['code'],
+                $validated['password']
+            );
+
+            $token = $user->createToken('mobile')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Password reset successfully.',
+                'user' => $user,
+                'token' => $token,
+            ]);
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages([
+                'code' => [$e->getMessage()],
+            ]);
+        }
     }
 }
