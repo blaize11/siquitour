@@ -1,11 +1,23 @@
-import { useState } from 'react';
-import { Text, View, Pressable } from 'react-native';
+import { useState, useEffect } from 'react';
+import { Text, View, Pressable, Platform } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { useSession } from '../../src/auth/SessionContext';
 import { Button, ScreenContainer, TextField, colors, spacing, typography } from '../../src/components';
 import { extractErrorMessage } from '../../src/components/ErrorView';
+
+// Import Google OAuth only on native platforms
+let Google: any = null;
+let useAuthRequest: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    Google = require('expo-auth-session/providers/google');
+    useAuthRequest = Google.useAuthRequest;
+  } catch (e) {
+    // Google OAuth not available
+  }
+}
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -17,12 +29,23 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [request, setRequest] = useState<any>(null);
+  const [response, setResponse] = useState<any>(null);
+  const [promptAsync, setPromptAsync] = useState<any>(null);
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
-    redirectUrl: 'siquitour://oauth/google',
-    scopes: ['profile', 'email'],
-  });
+  // Initialize Google OAuth on native platforms
+  useEffect(() => {
+    if (useAuthRequest && Platform.OS !== 'web') {
+      const [req, res, prompt] = useAuthRequest({
+        clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
+        redirectUrl: 'siquitour://oauth/google',
+        scopes: ['profile', 'email'],
+      });
+      setRequest(req);
+      setResponse(res);
+      setPromptAsync(() => prompt);
+    }
+  }, []);
 
   // Handle Google OAuth response
   const handleGoogleResponse = async () => {
@@ -100,24 +123,28 @@ export default function LoginScreen() {
           <Button title="Log in" onPress={onSubmit} loading={submitting} />
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-          <Text style={{ color: colors.textSecondary, fontSize: 12 }}>OR</Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-        </View>
+        {Platform.OS !== 'web' && (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>OR</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+            </View>
 
-        <Button
-          title="Continue with Google"
-          onPress={() => promptAsync()}
-          loading={googleLoading}
-          disabled={!request}
-          style={{
-            backgroundColor: '#fff',
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-          textStyle={{ color: colors.text }}
-        />
+            <Button
+              title="Continue with Google"
+              onPress={() => promptAsync && promptAsync()}
+              loading={googleLoading}
+              disabled={!request}
+              style={{
+                backgroundColor: '#fff',
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+              textStyle={{ color: colors.text }}
+            />
+          </>
+        )}
 
         <Link href="/(auth)/register" style={{ textAlign: 'center', color: colors.primary }}>
           New here? Create an account
