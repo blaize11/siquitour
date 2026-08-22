@@ -98,6 +98,14 @@ export default function ExploreScreen() {
     router.push(`/(guest)/rental/${rentalId}`);
   };
 
+  const handleSpotPress = (spotId: string) => {
+    router.push(`/(guest)/spot/${spotId}`);
+  };
+
+  const handleRestaurantPress = (restaurantId: string) => {
+    router.push(`/(guest)/restaurant/${restaurantId}`);
+  };
+
   if (showMap) {
     return (
       <MapView
@@ -235,7 +243,7 @@ export default function ExploreScreen() {
                   reviewCount={spot.review_count}
                   distance={spot.distance}
                   municipality={spot.municipality}
-                  onPress={() => {}}
+                  onPress={() => handleSpotPress(spot.id)}
                   onFavorite={() => {}}
                   isFavorite={false}
                 />

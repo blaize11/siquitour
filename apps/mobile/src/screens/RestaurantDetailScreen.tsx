@@ -6,8 +6,8 @@ import {
   ActivityIndicator,
   Image,
   FlatList,
+  Text,
 } from 'react-native';
-import { Text } from 'react-native-paper';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../api/client';
 
