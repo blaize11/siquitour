@@ -206,6 +206,7 @@ export default function RenterExploreScreen() {
                 <SpotCard
                   id={item.id}
                   name={item.name}
+                  imageUrl={item.image_url}
                   category={item.category}
                   rating={item.rating || 0}
                   reviewCount={item.review_count || 0}
