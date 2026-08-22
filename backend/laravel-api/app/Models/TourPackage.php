@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['tour_guide_id', 'title', 'description', 'duration_days', 'cover_image_url', 'rate_basis', 'min_pax', 'max_pax', 'is_customizable', 'status', 'sort_order'])]
+#[Fillable(['tour_guide_id', 'title', 'description', 'duration_days', 'cover_image_url', 'price_basis', 'min_pax', 'max_pax', 'is_customizable', 'status', 'sort_order'])]
 class TourPackage extends Model
 {
     protected function casts(): array
@@ -50,5 +50,27 @@ class TourPackage extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * Package-specific inclusion overrides (maps to shared Inclusion catalog)
+     */
+    public function inclusionOverrides(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Inclusion::class, 'package_inclusions')
+                    ->withPivot('sort_order')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Get inclusions for this package: either overrides (if set) or guide's defaults
+     */
+    public function getInclusionsAttribute()
+    {
+        $overrides = $this->inclusionOverrides()->get();
+        if ($overrides->isNotEmpty()) {
+            return $overrides;
+        }
+        return $this->guide->tourGuideProfile?->inclusions() ?? collect();
     }
 }

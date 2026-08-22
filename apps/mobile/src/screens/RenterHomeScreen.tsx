@@ -8,9 +8,15 @@ export default function RenterHomeScreen() {
 
   const quickActions = [
     {
+      title: 'Explore Rentals',
+      icon: 'map',
+      color: colors.primary,
+      onPress: () => router.push('/(renter)/explore'),
+    },
+    {
       title: 'My Listings',
       icon: 'home',
-      color: colors.primary,
+      color: '#FF6B6B',
       onPress: () => router.push('/(renter)/'),
     },
     {
@@ -28,7 +34,7 @@ export default function RenterHomeScreen() {
     {
       title: 'Messages',
       icon: 'chatbubble-ellipses',
-      color: '#FF6B6B',
+      color: '#9B59B6',
       onPress: () => router.push('/(renter)/chat/index'),
     },
   ];

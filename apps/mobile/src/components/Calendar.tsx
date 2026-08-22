@@ -201,206 +201,206 @@ export function Calendar({
 
   return (
     <View style={{ gap: spacing.xs }}>
-        {/* Month/Year Header */}
-        <View style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+      {/* Month/Year Header */}
+      <View style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: spacing.xs,
+      }}>
+        <Pressable
+          onPress={handlePrevMonth}
+          style={{
             paddingHorizontal: spacing.xs,
-          }}>
-          <Pressable
-            onPress={handlePrevMonth}
-            style={{
-              paddingHorizontal: spacing.xs,
-              paddingVertical: 2,
-              borderRadius: radius.sm,
-              backgroundColor: colors.surface,
-            }}
-          >
-            <Text style={{ fontSize: 12 }}>‹</Text>
-          </Pressable>
+            paddingVertical: 2,
+            borderRadius: radius.sm,
+            backgroundColor: colors.surface,
+          }}
+        >
+          <Text style={{ fontSize: 12 }}>‹</Text>
+        </Pressable>
 
-          <Text style={{ fontSize: 12, textAlign: 'center', flex: 1, fontWeight: '600' }}>
-            {monthNames[month]} {year}
+        <Text style={{ fontSize: 12, textAlign: 'center', flex: 1, fontWeight: '600' }}>
+          {monthNames[month]} {year}
+        </Text>
+
+        <Pressable
+          onPress={handleNextMonth}
+          style={{
+            paddingHorizontal: spacing.xs,
+            paddingVertical: 2,
+            borderRadius: radius.sm,
+            backgroundColor: colors.surface,
+          }}
+        >
+          <Text style={{ fontSize: 12 }}>›</Text>
+        </Pressable>
+      </View>
+
+      {/* Day names */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 2 }}>
+        {dayNames.map((day) => (
+          <Text
+            key={day}
+            style={{ fontSize: 10, textAlign: 'center', flex: 1, fontWeight: '600', color: colors.text }}
+          >
+            {day.slice(0, 2)}
           </Text>
-
-          <Pressable
-            onPress={handleNextMonth}
-            style={{
-              paddingHorizontal: spacing.xs,
-              paddingVertical: 2,
-              borderRadius: radius.sm,
-              backgroundColor: colors.surface,
-            }}
-          >
-            <Text style={{ fontSize: 12 }}>›</Text>
-          </Pressable>
-        </View>
-
-        {/* Day names */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 2 }}>
-          {dayNames.map((day) => (
-            <Text
-              key={day}
-              style={{ fontSize: 10, textAlign: 'center', flex: 1, fontWeight: '600', color: colors.text }}
-            >
-              {day.slice(0, 2)}
-            </Text>
-          ))}
-        </View>
-
-        {/* Calendar grid */}
-        {weeks.map((week, weekIndex) => (
-          <View key={weekIndex} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            {week.map((day, dayIndex) => {
-              const isBooked = day !== null && isDateBooked(day);
-              const isDisabled = day !== null && isDateDisabled(day);
-              const isSelected = day !== null && isDateStartOrEnd(day);
-              const inRange = day !== null && isDateInRange(day);
-              const bookedInRange = day !== null && isDateBookedInRange(day);
-
-              return (
-                <Pressable
-                  key={dayIndex}
-                  onPress={() => day !== null && handleDatePress(day)}
-                  disabled={isDisabled || isBooked}
-                  style={{
-                    flex: 1,
-                    aspectRatio: 1,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    borderRadius: 4,
-                    backgroundColor: isSelected
-                      ? colors.primary
-                      : inRange
-                        ? colors.primary + '40'
-                        : bookedInRange
-                          ? '#ffcccc'
-                          : isBooked
-                            ? '#f3f3f3'
-                            : isDisabled
-                              ? '#fafafa'
-                              : 'transparent',
-                    borderWidth: isSelected ? 0 : 0.5,
-                    borderColor: isBooked ? '#e0e0e0' : 'transparent',
-                    opacity: isDisabled ? 0.5 : 1,
-                    gap: 1,
-                  }}
-                >
-                  {day !== null && (
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        color: isSelected
-                          ? '#fff'
-                          : isBooked
-                            ? '#999'
-                            : inRange
-                              ? colors.primary
-                              : colors.text,
-                        fontWeight: isSelected || inRange ? '600' : '400',
-                      }}
-                    >
-                      {day}
-                    </Text>
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
         ))}
+      </View>
 
-        {/* Selected date range display */}
-        {tempStartDate && (
-          <View style={{ gap: spacing.xs, paddingHorizontal: spacing.xs, paddingTop: spacing.xs }}>
-            <View style={{ backgroundColor: colors.surface, padding: spacing.xs, borderRadius: radius.sm }}>
-              <Text style={{ fontSize: 11, fontWeight: '600', marginBottom: 4, color: colors.primary }}>
-                {tempStartDate}
-                {tempEndDate && tempEndDate !== tempStartDate ? ` → ${tempEndDate}` : ''}
-              </Text>
-              <Text style={{ fontSize: 10, color: colors.primary }}>
-                {getDayCount()} day{getDayCount() > 1 ? 's' : ''}
-              </Text>
-            </View>
+      {/* Calendar grid */}
+      {weeks.map((week, weekIndex) => (
+        <View key={weekIndex} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          {week.map((day, dayIndex) => {
+            const isBooked = day !== null && isDateBooked(day);
+            const isDisabled = day !== null && isDateDisabled(day);
+            const isSelected = day !== null && isDateStartOrEnd(day);
+            const inRange = day !== null && isDateInRange(day);
+            const bookedInRange = day !== null && isDateBookedInRange(day);
 
-            {isSelectingRange && tempEndDate === undefined && (
-              <Text style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>
-                Click end date or Book
-              </Text>
-            )}
-
-            <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            return (
               <Pressable
-                onPress={handleConfirm}
-                disabled={!tempStartDate}
+                key={dayIndex}
+                onPress={() => day !== null && handleDatePress(day)}
+                disabled={isDisabled || isBooked}
                 style={{
                   flex: 1,
-                  backgroundColor: colors.primary,
-                  paddingVertical: spacing.xs,
-                  borderRadius: radius.sm,
+                  aspectRatio: 1,
+                  justifyContent: 'center',
                   alignItems: 'center',
-                  opacity: tempStartDate ? 1 : 0.5,
+                  borderRadius: 4,
+                  backgroundColor: isSelected
+                    ? colors.primary
+                    : inRange
+                      ? colors.primary + '40'
+                      : bookedInRange
+                        ? '#ffcccc'
+                        : isBooked
+                          ? '#f3f3f3'
+                          : isDisabled
+                            ? '#fafafa'
+                            : 'transparent',
+                  borderWidth: isSelected ? 0 : 0.5,
+                  borderColor: isBooked ? '#e0e0e0' : 'transparent',
+                  opacity: isDisabled ? 0.5 : 1,
+                  gap: 1,
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 12 }}>Book</Text>
+                {day !== null && (
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: isSelected
+                        ? '#fff'
+                        : isBooked
+                          ? '#999'
+                          : inRange
+                            ? colors.primary
+                            : colors.text,
+                      fontWeight: isSelected || inRange ? '600' : '400',
+                    }}
+                  >
+                    {day}
+                  </Text>
+                )}
               </Pressable>
+            );
+          })}
+        </View>
+      ))}
 
-              <Pressable
-                onPress={handleReset}
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.surface,
-                  paddingVertical: spacing.xs,
-                  borderRadius: radius.sm,
-                  alignItems: 'center',
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <Text style={{ color: colors.text, fontWeight: '600', fontSize: 12 }}>Reset</Text>
-              </Pressable>
-            </View>
+      {/* Selected date range display */}
+      {tempStartDate && (
+        <View style={{ gap: spacing.xs, paddingHorizontal: spacing.xs, paddingTop: spacing.xs }}>
+          <View style={{ backgroundColor: colors.surface, padding: spacing.xs, borderRadius: radius.sm }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', marginBottom: 4, color: colors.primary }}>
+              {tempStartDate}
+              {tempEndDate && tempEndDate !== tempStartDate ? ` → ${tempEndDate}` : ''}
+            </Text>
+            <Text style={{ fontSize: 10, color: colors.primary }}>
+              {getDayCount()} day{getDayCount() > 1 ? 's' : ''}
+            </Text>
           </View>
-        )}
 
-        {/* Legend */}
-        <View style={{ gap: 4, marginTop: spacing.xs, paddingHorizontal: spacing.xs, flexDirection: 'row', flexWrap: 'wrap' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-            <View
+          {isSelectingRange && tempEndDate === undefined && (
+            <Text style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>
+              Click end date or Book
+            </Text>
+          )}
+
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            <Pressable
+              onPress={handleConfirm}
+              disabled={!tempStartDate}
               style={{
-                width: 10,
-                height: 10,
-                borderRadius: 2,
+                flex: 1,
                 backgroundColor: colors.primary,
+                paddingVertical: spacing.xs,
+                borderRadius: radius.sm,
+                alignItems: 'center',
+                opacity: tempStartDate ? 1 : 0.5,
               }}
-            />
-            <Text style={{ fontSize: 10 }}>Selected</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-            <View
+            >
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 12 }}>Book</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleReset}
               style={{
-                width: 10,
-                height: 10,
-                borderRadius: 2,
-                backgroundColor: colors.primary + '40',
+                flex: 1,
+                backgroundColor: colors.surface,
+                paddingVertical: spacing.xs,
+                borderRadius: radius.sm,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: colors.border,
               }}
-            />
-            <Text style={{ fontSize: 10 }}>Range</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-            <View
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 2,
-                backgroundColor: '#f3f3f3',
-                borderWidth: 0.5,
-                borderColor: '#e0e0e0',
-              }}
-            />
-            <Text style={{ fontSize: 10 }}>Booked</Text>
+            >
+              <Text style={{ color: colors.text, fontWeight: '600', fontSize: 12 }}>Reset</Text>
+            </Pressable>
           </View>
         </View>
+      )}
+
+      {/* Legend */}
+      <View style={{ gap: 4, marginTop: spacing.xs, paddingHorizontal: spacing.xs, flexDirection: 'row', flexWrap: 'wrap' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+          <View
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 2,
+              backgroundColor: colors.primary,
+            }}
+          />
+          <Text style={{ fontSize: 10 }}>Selected</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+          <View
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 2,
+              backgroundColor: colors.primary + '40',
+            }}
+          />
+          <Text style={{ fontSize: 10 }}>Range</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+          <View
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 2,
+              backgroundColor: '#f3f3f3',
+              borderWidth: 0.5,
+              borderColor: '#e0e0e0',
+            }}
+          />
+          <Text style={{ fontSize: 10 }}>Booked</Text>
+        </View>
+      </View>
     </View>
   );
 }

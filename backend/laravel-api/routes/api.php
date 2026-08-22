@@ -121,6 +121,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/conversations', [ConversationController::class, 'store']);
     Route::get('/conversations/{conversation}/messages', [MessageController::class, 'index']);
     Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store']);
+    Route::post('/conversations/{conversation}/messages/mark-read', [MessageController::class, 'markAsRead']);
 
     // Tour guide self-service.
     Route::middleware('role:tour_guide')->prefix('guide')->group(function () {
@@ -199,6 +200,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/spots/{spot}/images', [AdminSpotController::class, 'addImage']);
         Route::put('/spots/{spot}/images/{image}', [AdminSpotController::class, 'updateImage']);
         Route::delete('/spots/{spot}/images/{image}', [AdminSpotController::class, 'deleteImage']);
+        Route::put('/spots/reorder-images', [AdminSpotController::class, 'reorderImages']);
 
         Route::post('/restaurants', [AdminRestaurantController::class, 'store']);
         Route::put('/restaurants/{restaurant}', [AdminRestaurantController::class, 'update']);
@@ -208,5 +210,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/restaurants/{restaurant}/images', [AdminRestaurantController::class, 'addImage']);
         Route::put('/restaurants/{restaurant}/images/{image}', [AdminRestaurantController::class, 'updateImage']);
         Route::delete('/restaurants/{restaurant}/images/{image}', [AdminRestaurantController::class, 'deleteImage']);
+        Route::put('/restaurants/reorder-images', [AdminRestaurantController::class, 'reorderImages']);
     });
 });

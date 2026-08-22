@@ -22,6 +22,8 @@ export async function createRestaurant(
   const longitude = String(formData.get('longitude') ?? '').trim();
   const opening_time = String(formData.get('opening_time') ?? '').trim();
   const closing_time = String(formData.get('closing_time') ?? '').trim();
+  const feeType = String(formData.get('fee_type') ?? 'free');
+  const feeAmount = String(formData.get('fee_amount') ?? '').trim();
 
   if (!name) {
     return { error: 'Name is required.' };
@@ -44,6 +46,8 @@ export async function createRestaurant(
         longitude: longitude ? parseFloat(longitude) : undefined,
         opening_time: opening_time || undefined,
         closing_time: closing_time || undefined,
+        fee_type: feeType,
+        fee_amount: feeAmount ? parseFloat(feeAmount) : undefined,
       },
     });
   } catch (err) {

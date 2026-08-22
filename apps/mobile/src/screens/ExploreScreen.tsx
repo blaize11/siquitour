@@ -93,7 +93,7 @@ export function ExploreScreen({ navigation }: any) {
   const renderSpotCard = ({ item }: any) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate('SpotDetail', { spotId: item.id })}
+      onPress={() => navigation.navigate('spot/[id]', { id: item.id.toString() })}
     >
       <View style={styles.cardContent}>
         <View style={styles.cardHeader}>
@@ -111,7 +111,7 @@ export function ExploreScreen({ navigation }: any) {
   const renderRestaurantCard = ({ item }: any) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate('RestaurantDetail', { restaurantId: item.id })}
+      onPress={() => navigation.navigate('restaurant/[id]', { id: item.id.toString() })}
     >
       <View style={styles.cardContent}>
         <View style={styles.cardHeader}>

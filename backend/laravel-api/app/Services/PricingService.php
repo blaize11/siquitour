@@ -3,10 +3,13 @@
 namespace App\Services;
 
 use App\Models\BookingItineraryStop;
+use App\Models\Quote;
 use App\Models\Restaurant;
 use App\Models\Spot;
 use App\Models\TourPackage;
 use App\Models\TourPackageStop;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -76,6 +79,53 @@ class PricingService
             'total' => round($total, 2),
             'breakdown' => $breakdown,
         ];
+    }
+
+    /**
+     * Quote a package and persist it as an immutable Quote record.
+     *
+     * @param TourPackage $package
+     * @param int $paxCount
+     * @param array $selectedAddonIds
+     * @param array $customStops
+     * @param User|null $issuedBy (defaults to current authenticated user)
+     * @param int $expiryHours (defaults to 24)
+     * @return Quote
+     * @throws ValidationException
+     */
+    public function quotePackageAndPersist(
+        TourPackage $package,
+        int $paxCount,
+        array $selectedAddonIds = [],
+        array $customStops = [],
+        ?User $issuedBy = null,
+        int $expiryHours = 24
+    ): Quote {
+        // Compute pricing
+        $pricing = $this->quotePackage($package, $paxCount, $selectedAddonIds, $customStops);
+
+        // Determine who issued the quote
+        $issuedByUserId = $issuedBy?->id ?? Auth::id();
+
+        // Create and persist quote
+        $quote = Quote::create([
+            'quotable_type' => TourPackage::class,
+            'quotable_id' => $package->id,
+            'pax' => $paxCount,
+            'variant' => null,  // No variant selected for standard package quote
+            'price_basis' => $package->price_basis,
+            'duration_days' => $package->duration_days,
+            'tier_price' => $pricing['package_price'],
+            'included_fees_total' => 0,  // For now; entrance fees are displayed but not included in base
+            'addons_total' => $pricing['addons_total'],
+            'total' => $pricing['total'],
+            'breakdown' => $pricing['breakdown'],
+            'currency' => 'PHP',
+            'expires_at' => now()->addHours($expiryHours),
+            'issued_by_user_id' => $issuedByUserId,
+        ]);
+
+        return $quote;
     }
 
     /**
@@ -333,8 +383,8 @@ class PricingService
         $breakdown = [];
 
         // Line 1: Package price
-        $rateLabel = $package->rate_basis === 'per_pax'
-            ? "₱{$packagePrice} × {$paxCount} pax"
+        $rateLabel = $package->price_basis === 'per_day'
+            ? "₱{$packagePrice} per day × {$package->duration_days} days"
             : "₱{$packagePrice} (for your group)";
 
         $breakdown[] = [

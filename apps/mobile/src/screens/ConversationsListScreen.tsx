@@ -67,8 +67,32 @@ export function ConversationsListScreen({ basePath }: { basePath: string }) {
                     </Text>
                   </View>
 
-                  {/* Unread Badge (if needed) */}
-                  <View style={styles.unreadBadge} />
+                  {/* Unread Badge */}
+                  {item.unread_messages_count ? (
+                    <View
+                      style={{
+                        backgroundColor: '#d32f2f',
+                        borderRadius: 12,
+                        minWidth: 24,
+                        height: 24,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        paddingHorizontal: 6,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 12,
+                          fontWeight: '700',
+                        }}
+                      >
+                        {item.unread_messages_count > 99 ? '99+' : item.unread_messages_count}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.unreadBadge} />
+                  )}
                 </Pressable>
               </Link>
             );

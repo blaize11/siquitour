@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\QuotePackageRequest;
+use App\Http\Resources\QuoteResource;
 use App\Http\Resources\TourPackageResource;
 use App\Models\TourPackage;
 use App\Services\PricingService;
@@ -51,21 +52,24 @@ class PackageController extends Controller
      * POST /api/packages/{id}/quote
      * Get a price quote for this package with given parameters.
      *
-     * Returns the three-line cost breakdown without creating a booking.
+     * Creates and persists an immutable Quote record.
+     * Returns the quote with pricing breakdown and expiry information.
      */
     public function quote(TourPackage $package, QuotePackageRequest $request)
     {
         abort_unless($package->status === 'published', 404);
 
         try {
-            $quote = $this->pricingService->quotePackage(
+            $quote = $this->pricingService->quotePackageAndPersist(
                 $package,
                 $request->input('pax_count'),
                 $request->input('addon_ids', []),
-                $request->input('custom_stops', [])
+                $request->input('custom_stops', []),
+                $request->user(),  // Issue the quote to the requesting user
+                $request->input('expiry_hours', 24)  // Default 24 hours
             );
 
-            return response()->json($quote);
+            return new QuoteResource($quote);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
         }

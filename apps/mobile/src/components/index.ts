@@ -15,3 +15,4 @@ export * from './ImagePicker';
 export * from './cards';
 export { ImageCarousel } from './ImageCarousel';
 export { NotificationBell } from './NotificationBell';
+export { ChatBadgeIcon } from './ChatBadgeIcon';

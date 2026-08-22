@@ -1,4 +1,4 @@
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useBookings } from '../../../src/api/queries/bookings';
 import { EmptyState, ErrorView, LoadingView, ScreenContainer, colors, spacing, typography } from '../../../src/components';
@@ -61,15 +61,21 @@ export default function GuestBookingsScreen() {
                 <Text style={styles.sectionBadge}>{upcomingBookings.length}</Text>
               </View>
               <View style={styles.bookingsList}>
-                {upcomingBookings.map((booking) => (
-                  <BookingCard
-                    key={booking.id}
-                    booking={booking}
-                    title={bookingTitle(booking)}
-                    icon={getBookingIcon(booking)}
-                    onPress={() => router.push(`/(guest)/bookings/${booking.id}`)}
-                  />
-                ))}
+                {upcomingBookings.map((booking) =>
+                  booking.id ? (
+                    <BookingCard
+                      key={booking.id}
+                      booking={booking}
+                      title={bookingTitle(booking)}
+                      icon={getBookingIcon(booking)}
+                      onPress={() => {
+                        if (booking.id) {
+                          router.push(`/(guest)/bookings/${booking.id}`);
+                        }
+                      }}
+                    />
+                  ) : null
+                )}
               </View>
             </View>
           )}
@@ -82,15 +88,21 @@ export default function GuestBookingsScreen() {
                 <Text style={styles.sectionBadge}>{completedBookings.length}</Text>
               </View>
               <View style={styles.bookingsList}>
-                {completedBookings.map((booking) => (
-                  <BookingCard
-                    key={booking.id}
-                    booking={booking}
-                    title={bookingTitle(booking)}
-                    icon={getBookingIcon(booking)}
-                    onPress={() => router.push(`/(guest)/bookings/${booking.id}`)}
-                  />
-                ))}
+                {completedBookings.map((booking) =>
+                  booking.id ? (
+                    <BookingCard
+                      key={booking.id}
+                      booking={booking}
+                      title={bookingTitle(booking)}
+                      icon={getBookingIcon(booking)}
+                      onPress={() => {
+                        if (booking.id) {
+                          router.push(`/(guest)/bookings/${booking.id}`);
+                        }
+                      }}
+                    />
+                  ) : null
+                )}
               </View>
             </View>
           )}
@@ -103,15 +115,21 @@ export default function GuestBookingsScreen() {
                 <Text style={styles.sectionBadge}>{cancelledBookings.length}</Text>
               </View>
               <View style={styles.bookingsList}>
-                {cancelledBookings.map((booking) => (
-                  <BookingCard
-                    key={booking.id}
-                    booking={booking}
-                    title={bookingTitle(booking)}
-                    icon={getBookingIcon(booking)}
-                    onPress={() => router.push(`/(guest)/bookings/${booking.id}`)}
-                  />
-                ))}
+                {cancelledBookings.map((booking) =>
+                  booking.id ? (
+                    <BookingCard
+                      key={booking.id}
+                      booking={booking}
+                      title={bookingTitle(booking)}
+                      icon={getBookingIcon(booking)}
+                      onPress={() => {
+                        if (booking.id) {
+                          router.push(`/(guest)/bookings/${booking.id}`);
+                        }
+                      }}
+                    />
+                  ) : null
+                )}
               </View>
             </View>
           )}
@@ -133,13 +151,24 @@ interface BookingCardProps {
 function BookingCard({ booking, title, icon, onPress }: BookingCardProps) {
   const startDate = new Date(booking.start_date);
   const endDate = booking.end_date ? new Date(booking.end_date) : null;
+  const isGuideBooking = booking.bookable_type === 'App\\Models\\User';
+  const guideAvatar = isGuideBooking ? (booking.bookable as User | undefined)?.avatar_url : null;
 
   return (
     <Pressable onPress={onPress} style={styles.bookingCard}>
       <View style={styles.bookingCardContent}>
-        {/* Left side - Icon and Info */}
+        {/* Left side - Avatar/Icon and Info */}
         <View style={styles.bookingCardLeft}>
-          <Text style={styles.bookingIcon}>{icon}</Text>
+          {guideAvatar ? (
+            <Image
+              source={{ uri: guideAvatar }}
+              style={styles.guideAvatar}
+            />
+          ) : (
+            <View style={[styles.guideAvatar, styles.avatarPlaceholder]}>
+              <Text style={styles.bookingIcon}>{icon}</Text>
+            </View>
+          )}
           <View style={{ flex: 1 }}>
             <Text style={styles.bookingTitle} numberOfLines={1}>
               {title}
@@ -275,6 +304,17 @@ const styles = StyleSheet.create({
   },
   bookingIcon: {
     fontSize: 32,
+  },
+  guideAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    resizeMode: 'cover',
+  },
+  avatarPlaceholder: {
+    backgroundColor: colors.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   bookingTitle: {
     fontSize: 15,

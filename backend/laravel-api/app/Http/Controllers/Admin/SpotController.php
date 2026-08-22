@@ -165,4 +165,25 @@ class SpotController extends Controller
 
         return response()->noContent();
     }
+
+    /**
+     * PUT /api/admin/spots/reorder-images
+     * Reorder images for a spot.
+     */
+    public function reorderImages(Request $request)
+    {
+        $validated = $request->validate([
+            'images' => ['required', 'array'],
+            'images.*.id' => ['required', 'integer', 'exists:spot_images,id'],
+            'images.*.sort_order' => ['required', 'integer', 'min:0'],
+        ]);
+
+        foreach ($validated['images'] as $imageData) {
+            SpotImage::where('id', $imageData['id'])->update([
+                'sort_order' => $imageData['sort_order'],
+            ]);
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

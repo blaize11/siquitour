@@ -133,6 +133,7 @@ export interface ConversationParticipant {
   id: number;
   name: string;
   role: Role;
+  avatar_url?: string | null;
 }
 
 export interface Conversation {
@@ -143,6 +144,11 @@ export interface Conversation {
   participant_one?: ConversationParticipant;
   participant_two?: ConversationParticipant;
   messages_count?: number;
+  unread_messages_count?: number;
+  latest_message?: {
+    content: string;
+    created_at: string;
+  };
 }
 
 export interface Message {
@@ -152,7 +158,7 @@ export interface Message {
   body: string;
   read_at: string | null;
   created_at: string;
-  sender?: Pick<User, 'id' | 'name'>;
+  sender?: Pick<User, 'id' | 'name' | 'avatar_url'>;
 }
 
 export interface Paginated<T> {

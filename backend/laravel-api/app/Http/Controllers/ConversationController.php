@@ -15,10 +15,36 @@ class ConversationController extends Controller
         $conversations = Conversation::query()
             ->where('participant_one_id', $user->id)
             ->orWhere('participant_two_id', $user->id)
-            ->with(['participantOne:id,name,role', 'participantTwo:id,name,role'])
+            ->with([
+                'participantOne:id,name,role,avatar_url',
+                'participantTwo:id,name,role,avatar_url',
+            ])
             ->withCount('messages')
             ->latest('updated_at')
             ->paginate(20);
+
+        // Add unread messages count and latest message for each conversation
+        $conversations->getCollection()->transform(function ($conversation) use ($user) {
+            $unreadCount = $conversation->messages()
+                ->where('sender_id', '!=', $user->id)
+                ->whereNull('read_at')
+                ->count();
+            $conversation->unread_messages_count = $unreadCount;
+
+            // Get the latest message
+            $latestMessage = $conversation->messages()
+                ->latest('created_at')
+                ->first(['id', 'body', 'created_at']);
+
+            if ($latestMessage) {
+                $conversation->latest_message = [
+                    'content' => $latestMessage->body,
+                    'created_at' => $latestMessage->created_at,
+                ];
+            }
+
+            return $conversation;
+        });
 
         return response()->json($conversations);
     }

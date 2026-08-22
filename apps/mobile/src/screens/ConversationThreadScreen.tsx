@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useConversations, useMessages, useSendMessage } from '../api/queries/chat';
+import { useConversations, useMessages, useSendMessage, useMarkMessagesAsRead } from '../api/queries/chat';
 import { useSession } from '../auth/SessionContext';
 import { ErrorView, LoadingView, colors, radius, spacing, typography } from '../components';
 import { extractErrorMessage } from '../components/ErrorView';
@@ -11,7 +11,12 @@ export function ConversationThreadScreen({ conversationId }: { conversationId: n
   const { data: conversationsData } = useConversations();
   const { data: messagesData, isLoading, isError, error, refetch } = useMessages(conversationId);
   const sendMessage = useSendMessage(conversationId);
+  const markAsRead = useMarkMessagesAsRead(conversationId);
   const [body, setBody] = useState('');
+  const flatListRef = useRef<FlatList>(null);
+  const [previousMessageCount, setPreviousMessageCount] = useState(0);
+
+  const messages = messagesData?.data ?? [];
 
   // Find the conversation to get the other user
   const conversation = conversationsData?.data?.find((c) => c.id === conversationId);
@@ -19,6 +24,31 @@ export function ConversationThreadScreen({ conversationId }: { conversationId: n
     conversation?.participant_one_id === user?.id
       ? conversation?.participant_two
       : conversation?.participant_one;
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > previousMessageCount) {
+      // New messages have arrived, scroll to bottom
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+    setPreviousMessageCount(messages.length);
+  }, [messages.length, previousMessageCount]);
+
+  // Mark messages as read when conversation is opened
+  useEffect(() => {
+    if (!isLoading && messages.length > 0) {
+      // Check if there are unread messages from the other user
+      const hasUnreadMessages = messages.some(
+        msg => msg.sender_id !== user?.id && !msg.read_at
+      );
+      if (hasUnreadMessages) {
+        console.log('Marking messages as read for conversation', conversationId);
+        markAsRead.mutate();
+      }
+    }
+  }, [conversationId, isLoading]);
 
   const onSend = async () => {
     if (!body.trim()) return;
@@ -33,8 +63,6 @@ export function ConversationThreadScreen({ conversationId }: { conversationId: n
 
   if (isLoading) return <LoadingView />;
   if (isError) return <ErrorView message={extractErrorMessage(error)} onRetry={refetch} />;
-
-  const messages = messagesData?.data ?? [];
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -74,15 +102,28 @@ export function ConversationThreadScreen({ conversationId }: { conversationId: n
           </View>
         ) : (
           <FlatList
+            ref={flatListRef}
             data={messages}
             keyExtractor={(item) => String(item.id)}
-            inverted
             contentContainerStyle={styles.messagesList}
             renderItem={({ item }) => {
               const mine = item.sender_id === user?.id;
               return (
                 <View style={[styles.messageRow, mine && styles.messageRowMine]}>
-                  {!mine && <View style={styles.messageSpacer} />}
+                  {!mine && (
+                    <View style={styles.messageAvatar}>
+                      {item.sender?.avatar_url ? (
+                        <Image source={{ uri: item.sender.avatar_url }} style={styles.messageAvatarImage} />
+                      ) : (
+                        <View style={styles.messageAvatarPlaceholder}>
+                          <Text style={styles.messageAvatarText}>
+                            {item.sender?.name?.charAt(0).toUpperCase() ?? '?'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                  {mine && <View style={styles.messageSpacer} />}
                   <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleTheirs]}>
                     <Text style={[styles.messageText, mine && styles.messageTextMine]}>
                       {item.body}
@@ -94,7 +135,19 @@ export function ConversationThreadScreen({ conversationId }: { conversationId: n
                       })}
                     </Text>
                   </View>
-                  {mine && <View style={styles.messageSpacer} />}
+                  {mine && (
+                    <View style={styles.messageAvatar}>
+                      {user?.avatar_url ? (
+                        <Image source={{ uri: user.avatar_url }} style={styles.messageAvatarImage} />
+                      ) : (
+                        <View style={styles.messageAvatarPlaceholder}>
+                          <Text style={styles.messageAvatarText}>
+                            {user?.name?.charAt(0).toUpperCase() ?? '?'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
               );
             }}
@@ -195,7 +248,30 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   messageSpacer: {
-    width: '15%',
+    width: 32,
+  },
+  messageAvatar: {
+    width: 32,
+    height: 32,
+  },
+  messageAvatarImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    resizeMode: 'cover',
+  },
+  messageAvatarPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  messageAvatarText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   messageBubble: {
     maxWidth: '80%',

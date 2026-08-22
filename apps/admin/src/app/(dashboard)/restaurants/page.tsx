@@ -40,7 +40,7 @@ export default async function RestaurantsPage() {
                   <div className="flex gap-2">
                     <Link href={`/restaurants/${restaurant.id}`}>
                       <Button variant="outline" className="px-2 py-1 text-xs">
-                        Manage Images
+                        Edit Restaurant
                       </Button>
                     </Link>
                     <form action={deleteRestaurant.bind(null, restaurant.id)}>

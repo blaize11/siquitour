@@ -39,9 +39,16 @@ export function ImageManager({
       const formData = new FormData();
       formData.append('image', file);
 
+      // Get auth token from localStorage
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
       const response = await fetch(`/api/admin/${entityType}s/${entityId}/images`, {
         method: 'POST',
         body: formData,
+        credentials: 'include',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
 
       if (!response.ok) {
@@ -66,8 +73,15 @@ export function ImageManager({
     if (!confirm('Are you sure you want to delete this image?')) return;
 
     try {
+      // Get auth token from localStorage
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
       const response = await fetch(`/api/admin/${entityType}s/${entityId}/images/${imageId}`, {
         method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
 
       if (!response.ok) {

@@ -8,9 +8,15 @@ export default function GuideHomeScreen() {
 
   const quickActions = [
     {
+      title: 'Explore Tours',
+      icon: 'map',
+      color: colors.primary,
+      onPress: () => router.push('/(guide)/explore'),
+    },
+    {
       title: 'My Bookings',
       icon: 'calendar',
-      color: colors.primary,
+      color: '#FF6B6B',
       onPress: () => router.push('/(guide)/'),
     },
     {
@@ -28,7 +34,7 @@ export default function GuideHomeScreen() {
     {
       title: 'Messages',
       icon: 'chatbubble-ellipses',
-      color: '#FF6B6B',
+      color: '#9B59B6',
       onPress: () => router.push('/(guide)/chat/index'),
     },
   ];

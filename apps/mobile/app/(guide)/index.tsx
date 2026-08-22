@@ -223,54 +223,85 @@ interface BookingCardProps {
 function BookingCard({ booking, onAccept, onDecline, onComplete, busy }: BookingCardProps) {
   return (
     <View style={styles.bookingCard}>
-      {/* Image */}
-      <View style={styles.bookingImageContainer}>
-        <Text style={styles.bookingImagePlaceholder}>📍</Text>
-      </View>
-
-      {/* Content */}
-      <View style={styles.bookingContent}>
-        <View style={styles.bookingHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.bookingGuestName}>{booking.guest?.name || 'Guest'}</Text>
-            <Text style={styles.bookingDetails}>{booking.tour_name || 'Tour'}</Text>
+      {/* Guest Avatar and Basic Info */}
+      <View style={styles.bookingHeader}>
+        {booking.guest?.avatar_url ? (
+          <Image
+            source={{ uri: booking.guest.avatar_url }}
+            style={styles.guestAvatar}
+          />
+        ) : (
+          <View style={[styles.guestAvatar, styles.guestAvatarPlaceholder]}>
+            <Text style={styles.avatarPlaceholderText}>👤</Text>
           </View>
+        )}
+
+        <View style={styles.guestInfo}>
+          <Text style={styles.bookingGuestName}>{booking.guest?.name || 'Guest'}</Text>
+          <Text style={styles.guestRole}>{booking.guest?.role || 'Tourist'}</Text>
           <StatusBadge status={booking.status} />
         </View>
+      </View>
 
-        <Text style={styles.bookingTime}>
-          {new Date(booking.start_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {booking.pax_count} Pax
-        </Text>
-
-        {booking.status === 'pending' && (
-          <View style={styles.bookingActions}>
-            <Pressable
-              style={[styles.bookingActionButton, styles.acceptButton]}
-              onPress={onAccept}
-              disabled={busy}
-            >
-              <Text style={styles.acceptButtonText}>Accept</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.bookingActionButton, styles.declineButton]}
-              onPress={onDecline}
-              disabled={busy}
-            >
-              <Text style={styles.declineButtonText}>Decline</Text>
-            </Pressable>
+      {/* Booking Details */}
+      <View style={styles.bookingDetails}>
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>📅 Date</Text>
+          <Text style={styles.detailValue}>
+            {new Date(booking.start_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+          </Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>🕐 Time</Text>
+          <Text style={styles.detailValue}>
+            {new Date(booking.start_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>👥 Guests</Text>
+          <Text style={styles.detailValue}>{booking.pax_count} {booking.pax_count === 1 ? 'Pax' : 'Pax'}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>🎯 Tour</Text>
+          <Text style={styles.detailValue}>{booking.tour_name || 'Tour Package'}</Text>
+        </View>
+        {booking.total_price && (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>💰 Price</Text>
+            <Text style={styles.detailValue}>₱{parseFloat(booking.total_price).toLocaleString()}</Text>
           </View>
         )}
+      </View>
 
-        {booking.status === 'accepted' && (
+      {/* Actions */}
+      {booking.status === 'pending' && (
+        <View style={styles.bookingActions}>
           <Pressable
-            style={[styles.bookingActionButton, styles.completeButton]}
-            onPress={onComplete}
+            style={[styles.bookingActionButton, styles.acceptButton]}
+            onPress={onAccept}
             disabled={busy}
           >
-            <Text style={styles.completeButtonText}>Mark Completed</Text>
+            <Text style={styles.acceptButtonText}>✓ Accept</Text>
           </Pressable>
-        )}
-      </View>
+          <Pressable
+            style={[styles.bookingActionButton, styles.declineButton]}
+            onPress={onDecline}
+            disabled={busy}
+          >
+            <Text style={styles.declineButtonText}>✕ Decline</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {booking.status === 'accepted' && (
+        <Pressable
+          style={[styles.bookingActionButton, styles.completeButton]}
+          onPress={onComplete}
+          disabled={busy}
+        >
+          <Text style={styles.completeButtonText}>✓ Mark Completed</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -383,13 +414,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   bookingCard: {
-    flexDirection: 'row',
     backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
     marginBottom: spacing.md,
+    padding: spacing.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -414,19 +445,56 @@ const styles = StyleSheet.create({
   },
   bookingHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  guestAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+  },
+  guestAvatarPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholderText: {
+    fontSize: 28,
+  },
+  guestInfo: {
+    flex: 1,
   },
   bookingGuestName: {
     fontSize: 15,
     fontWeight: '600',
     color: colors.text,
   },
-  bookingDetails: {
+  guestRole: {
     fontSize: 12,
     color: colors.textMuted,
-    marginTop: spacing.xs,
+    marginTop: 2,
+  },
+  bookingDetails: {
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  detailValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
   },
   bookingTime: {
     fontSize: 12,

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Text } from 'react-native';
+import { Alert, Text } from 'react-native';
+import { router } from 'expo-router';
 import { useSession } from '../../src/auth/SessionContext';
 import { useUpdateGuideProfile } from '../../src/api/queries/guide';
 import { Button, Card, TextField, colors, spacing, typography } from '../../src/components';
@@ -29,6 +30,16 @@ export default function GuideProfileScreen() {
       });
       await refreshUser();
       setSaved(true);
+
+      // Show success message and redirect to home
+      Alert.alert('Success', 'Your profile changes have been saved!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.push('/(guide)/home');
+          },
+        },
+      ]);
     } catch (err) {
       setError(extractErrorMessage(err, 'Unable to save your profile.'));
     }

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-#[Fillable(['guest_id', 'bookable_type', 'bookable_id', 'tour_package_id', 'itinerary_mode', 'pax_count', 'start_date', 'end_date', 'status', 'total_price', 'commission_amount', 'quoted_package_price', 'quoted_addons_total', 'estimated_onsite_fees', 'custom_stops_added'])]
+#[Fillable(['guest_id', 'bookable_type', 'bookable_id', 'tour_package_id', 'itinerary_mode', 'pax_count', 'start_date', 'end_date', 'status', 'total_price', 'commission_amount', 'quoted_package_price', 'quoted_addons_total', 'estimated_onsite_fees', 'custom_stops_added', 'quote_id'])]
 class Booking extends Model
 {
     protected function casts(): array
@@ -39,6 +39,14 @@ class Booking extends Model
     public function tourPackage(): BelongsTo
     {
         return $this->belongsTo(TourPackage::class);
+    }
+
+    /**
+     * The quote that locked in this booking's price
+     */
+    public function quote(): BelongsTo
+    {
+        return $this->belongsTo(Quote::class);
     }
 
     public function itineraryStops(): HasMany

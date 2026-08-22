@@ -89,6 +89,11 @@ export function LocationPicker({
         onLocationSelect(lat, lng);
       });
 
+      // Invalidate map size to ensure it displays correctly
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+
       setMapLoaded(true);
     };
     document.body.appendChild(script);
@@ -99,7 +104,7 @@ export function LocationPicker({
         mapRef.current = null;
       }
     };
-  }, [initialLatitude, initialLongitude, onLocationSelect]);
+  }, []);
 
   return (
     <div className="flex flex-col gap-3">
@@ -111,6 +116,10 @@ export function LocationPicker({
           borderRadius: '12px',
           border: '1px solid #E4E0D8',
           overflow: 'hidden',
+          position: 'relative',
+          backgroundColor: '#f0f0f0',
+          minHeight: '300px',
+          zIndex: 1,
         }}
       />
 

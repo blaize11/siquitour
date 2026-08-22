@@ -8,6 +8,8 @@ export default function AdminLayout() {
       <Tabs.Screen name="spots" options={{ title: 'Spots' }} />
       <Tabs.Screen name="commission" options={{ title: 'Commission' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="spot/[id]" options={{ href: null, title: 'Spot' }} />
+      <Tabs.Screen name="restaurant/[id]" options={{ href: null, title: 'Restaurant' }} />
     </Tabs>
   );
 }

@@ -17,7 +17,7 @@ class NotificationController extends Controller
         $user = $request->user();
 
         $unreadCount = Notification::where('user_id', $user->id)
-            ->where('read', false)
+            ->whereNull('read_at')
             ->count();
 
         $notifications = Notification::where('user_id', $user->id)
@@ -57,9 +57,8 @@ class NotificationController extends Controller
         $user = $request->user();
 
         Notification::where('user_id', $user->id)
-            ->where('read', false)
+            ->whereNull('read_at')
             ->update([
-                'read' => true,
                 'read_at' => now(),
             ]);
 

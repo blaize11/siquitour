@@ -23,10 +23,24 @@ class TourGuideProfile extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function inclusions(): HasMany
+    /**
+     * Legacy: guide-created inclusions (kept for backward compatibility)
+     */
+    public function inclusionsLegacy(): HasMany
     {
         return $this->hasMany(GuideInclusion::class)
             ->orderBy('sort_order')
             ->orderBy('id');
+    }
+
+    /**
+     * Shared inclusions catalog entries selected by this guide
+     */
+    public function inclusions(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Inclusion::class, 'guide_inclusion_catalog')
+                    ->withPivot('notes')
+                    ->withTimestamps()
+                    ->orderBy('sort_order');
     }
 }

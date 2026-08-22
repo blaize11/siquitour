@@ -77,7 +77,9 @@ export default function ResetPasswordScreen() {
             secureTextEntry
             placeholder="Confirm your password"
           />
-          {error && <Text style={{ color: colors.danger, fontSize: 12 }}>{error}</Text>}
+          {error && (
+            <Text style={{ color: colors.danger, fontSize: 12 }}>{error}</Text>
+          )}
           {password && passwordConfirmation && password !== passwordConfirmation && (
             <Text style={{ color: colors.danger, fontSize: 12 }}>Passwords do not match</Text>
           )}
@@ -92,12 +94,14 @@ export default function ResetPasswordScreen() {
           />
         </View>
 
-        <Text
-          style={{ textAlign: 'center', color: colors.primary, cursor: 'pointer', fontSize: 12 }}
-          onPress={() => router.replace('/(auth)')}
-        >
-          Back to Login
-        </Text>
+        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+          <Text
+            style={{ textAlign: 'center', color: colors.primary, cursor: 'pointer', fontSize: 12 }}
+            onPress={() => router.replace('/(auth)')}
+          >
+            Back to Login
+          </Text>
+        </View>
       </View>
     </ScreenContainer>
   );

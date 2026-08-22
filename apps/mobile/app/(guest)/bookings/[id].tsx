@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useBooking, useCancelBooking, useCreateReview, usePayBooking } from '../../../src/api/queries/bookings';
 import {
@@ -21,8 +21,9 @@ import type { Rental, User } from '../../../src/types/api';
 
 export default function GuestBookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const bookingId = Number(id);
-  const { data: booking, isLoading, isError, error, refetch } = useBooking(bookingId);
+  const router = useRouter();
+  const bookingId = id ? Number(id) : null;
+  const { data: booking, isLoading, isError, error, refetch } = useBooking(bookingId || 0);
 
   const cancelBooking = useCancelBooking();
   const createReview = useCreateReview();
@@ -35,8 +36,30 @@ export default function GuestBookingDetailScreen() {
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'gcash' | 'cash' | 'maya' | null>(null);
 
+  if (!bookingId) {
+    return (
+      <ErrorView
+        message="Booking not found"
+        onRetry={() => router.push('/(guest)/bookings')}
+      />
+    );
+  }
+
   if (isLoading) return <LoadingView />;
-  if (isError || !booking) return <ErrorView message={extractErrorMessage(error)} onRetry={refetch} />;
+  if (isError || !booking) {
+    return (
+      <ErrorView
+        message={extractErrorMessage(error)}
+        onRetry={() => {
+          if (!booking) {
+            router.push('/(guest)/bookings');
+          } else {
+            refetch();
+          }
+        }}
+      />
+    );
+  }
 
   const isGuideBooking = booking.bookable_type === 'App\\Models\\User';
   const title = isGuideBooking

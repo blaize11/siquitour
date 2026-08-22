@@ -62,6 +62,34 @@ export function RestaurantForm() {
         className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
       />
 
+      {/* Fee Type */}
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="fee_type" className="text-sm font-medium text-foreground">
+          Fee Type
+        </label>
+        <select
+          id="fee_type"
+          name="fee_type"
+          defaultValue="consumable"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+        >
+          <option value="free">Free</option>
+          <option value="per_pax">Per Person (₱)</option>
+          <option value="consumable">Consumable (Min. Spend)</option>
+          <option value="donation">Donation</option>
+        </select>
+      </div>
+
+      {/* Fee Amount */}
+      <input
+        type="number"
+        name="fee_amount"
+        placeholder="Fee amount (₱) - optional"
+        step="0.01"
+        min="0"
+        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+      />
+
       <div className="grid grid-cols-2 gap-2">
         <input
           type="time"

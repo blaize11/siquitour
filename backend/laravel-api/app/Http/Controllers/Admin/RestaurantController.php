@@ -166,4 +166,25 @@ class RestaurantController extends Controller
 
         return response()->noContent();
     }
+
+    /**
+     * PUT /api/admin/restaurants/reorder-images
+     * Reorder images for a restaurant.
+     */
+    public function reorderImages(Request $request)
+    {
+        $validated = $request->validate([
+            'images' => ['required', 'array'],
+            'images.*.id' => ['required', 'integer', 'exists:restaurant_images,id'],
+            'images.*.sort_order' => ['required', 'integer', 'min:0'],
+        ]);
+
+        foreach ($validated['images'] as $imageData) {
+            RestaurantImage::where('id', $imageData['id'])->update([
+                'sort_order' => $imageData['sort_order'],
+            ]);
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

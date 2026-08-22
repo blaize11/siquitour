@@ -4,6 +4,8 @@ import {
   useMarkNotificationAsRead,
   useMarkAllNotificationsAsRead,
   useDeleteNotification,
+  useNotificationNavigation,
+  type Notification,
 } from '../api/queries/notifications';
 import {
   ErrorView,
@@ -20,6 +22,7 @@ export function NotificationsScreen() {
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
   const deleteNotification = useDeleteNotification();
+  const handleNotificationClick = useNotificationNavigation();
 
   if (isLoading) return <LoadingView />;
   if (isError) return <ErrorView message={extractErrorMessage(errorMsg)} onRetry={refetch} />;
@@ -33,6 +36,10 @@ export function NotificationsScreen() {
 
   const handleDelete = (notificationId: number) => {
     deleteNotification.mutate(notificationId);
+  };
+
+  const handleNotificationPress = (notification: Notification) => {
+    handleNotificationClick(notification);
   };
 
   return (
@@ -60,11 +67,12 @@ export function NotificationsScreen() {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
           {notifications.map((notification) => (
-            <View
+            <Pressable
               key={notification.id}
+              onPress={() => handleNotificationPress(notification)}
               style={[
                 styles.notificationCard,
-                !notification.read && styles.notificationCardUnread,
+                !notification.read_at && styles.notificationCardUnread,
               ]}
             >
               <View style={styles.notificationContent}>
@@ -86,7 +94,7 @@ export function NotificationsScreen() {
               </View>
 
               <View style={styles.notificationActions}>
-                {!notification.read && (
+                {!notification.read_at && (
                   <Pressable
                     onPress={() => handleMarkAsRead(notification.id)}
                     style={styles.actionButton}
@@ -101,7 +109,7 @@ export function NotificationsScreen() {
                   <Text style={styles.deleteText}>✕</Text>
                 </Pressable>
               </View>
-            </View>
+            </Pressable>
           ))}
           <View style={{ height: spacing.lg }} />
         </ScrollView>

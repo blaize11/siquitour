@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { apiFetch } from '@/lib/api';
+import { clientApiFetch } from '@/lib/client-api';
 import { Card } from '@/components/Card';
 import { ImageManager } from '@/components/ImageManager';
 import { Button } from '@/components/Button';
@@ -18,13 +18,21 @@ export default function SpotDetailsPage() {
   const [images, setImages] = useState<SpotImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editedSpot, setEditedSpot] = useState<Partial<Spot>>({});
 
   useEffect(() => {
     const loadSpot = async () => {
       try {
-        const data = await apiFetch<Spot>(`/spots/${spotId}`);
+        const data = await clientApiFetch<Spot>(`/spots/${spotId}`);
         setSpot(data);
         setImages(data.images || []);
+        setEditedSpot({
+          name: data.name,
+          description: data.description,
+          fee_type: data.fee_type,
+          fee_amount: data.fee_amount,
+        });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load spot');
       } finally {
@@ -34,6 +42,24 @@ export default function SpotDetailsPage() {
 
     loadSpot();
   }, [spotId]);
+
+  const handleSaveChanges = async () => {
+    if (!spot) return;
+    setSaving(true);
+    try {
+      await clientApiFetch(`/admin/spots/${spotId}`, {
+        method: 'PUT',
+        body: editedSpot,
+      });
+      setSpot({ ...spot, ...editedSpot });
+      setError(null);
+      alert('Spot updated successfully!');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update spot');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleImageAdded = (newImage: SpotImage) => {
     setImages([...images, newImage]);
@@ -45,14 +71,14 @@ export default function SpotDetailsPage() {
 
   const handleImageReordered = async (reorderedImages: SpotImage[]) => {
     try {
-      await apiFetch('/admin/spots/reorder-images', {
+      await clientApiFetch('/admin/spots/reorder-images', {
         method: 'PUT',
-        body: JSON.stringify({
+        body: {
           images: reorderedImages.map((img) => ({
             id: img.id,
             sort_order: img.sort_order,
           })),
-        }),
+        },
       });
       setImages(reorderedImages);
     } catch (err) {
@@ -84,49 +110,92 @@ export default function SpotDetailsPage() {
         </Button>
       </div>
 
-      <Card className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="space-y-4">
         <div>
-          <h2 className="mb-2 text-sm font-semibold text-foreground">Spot Information</h2>
+          <h2 className="mb-4 text-sm font-semibold text-foreground">Edit Spot Information</h2>
           <div className="grid gap-4">
             <div>
-              <p className="text-xs font-medium text-muted">Name</p>
-              <p className="text-sm text-foreground">{spot.name}</p>
+              <label className="text-xs font-medium text-muted">Name</label>
+              <input
+                type="text"
+                value={editedSpot.name || ''}
+                onChange={(e) => setEditedSpot({ ...editedSpot, name: e.target.value })}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground mt-1"
+              />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted">Category</p>
-              <p className="text-sm text-foreground">{spot.category}</p>
+              <label className="text-xs font-medium text-muted">Category</label>
+              <p className="text-sm text-foreground mt-1 p-2 bg-surface rounded">{spot.category}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-muted">Description</p>
-              <p className="text-sm text-foreground">{spot.description || '—'}</p>
+              <label className="text-xs font-medium text-muted">Description</label>
+              <textarea
+                value={editedSpot.description || ''}
+                onChange={(e) => setEditedSpot({ ...editedSpot, description: e.target.value })}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground mt-1"
+                rows={3}
+              />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted">Municipality</p>
-              <p className="text-sm text-foreground">{spot.municipality}</p>
+              <label className="text-xs font-medium text-muted">Municipality</label>
+              <p className="text-sm text-foreground mt-1 p-2 bg-surface rounded">{spot.municipality}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs font-medium text-muted">Fee Type</p>
-                <p className="text-sm text-foreground">{spot.fee_type}</p>
+                <label className="text-xs font-medium text-muted">Fee Type</label>
+                <select
+                  value={editedSpot.fee_type || 'free'}
+                  onChange={(e) => setEditedSpot({ ...editedSpot, fee_type: e.target.value as any })}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground mt-1"
+                >
+                  <option value="free">Free</option>
+                  <option value="per_pax">Per Person (₱)</option>
+                  <option value="donation">Donation</option>
+                  <option value="consumable">Consumable</option>
+                </select>
               </div>
               <div>
-                <p className="text-xs font-medium text-muted">Fee Amount</p>
-                <p className="text-sm text-foreground">₱{spot.fee_amount || '—'}</p>
+                <label className="text-xs font-medium text-muted">Fee Amount (₱)</label>
+                <input
+                  type="number"
+                  value={editedSpot.fee_amount || ''}
+                  onChange={(e) => setEditedSpot({ ...editedSpot, fee_amount: parseFloat(e.target.value) || 0 })}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground mt-1"
+                  step="0.01"
+                  min="0"
+                />
               </div>
             </div>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <Button
+              onClick={handleSaveChanges}
+              disabled={saving}
+              className="self-start"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
           </div>
         </div>
-      </Card>
+        </Card>
 
-      {/* Image Manager */}
-      <ImageManager
-        entityType="spot"
-        entityId={spotId}
-        images={images}
-        onImageAdded={handleImageAdded}
-        onImageDeleted={handleImageDeleted}
-        onImageReordered={handleImageReordered}
-      />
+        {/* Image Manager Card */}
+        <Card className="space-y-4">
+          <div>
+            <h2 className="mb-4 text-sm font-semibold text-foreground">Images</h2>
+            <ImageManager
+              entityType="spot"
+              entityId={spotId}
+              images={images}
+              onImageAdded={handleImageAdded}
+              onImageDeleted={handleImageDeleted}
+              onImageReordered={handleImageReordered}
+            />
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

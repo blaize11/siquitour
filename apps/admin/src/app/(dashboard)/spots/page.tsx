@@ -38,7 +38,7 @@ export default async function SpotsPage() {
                   <div className="flex gap-2">
                     <Link href={`/spots/${spot.id}`}>
                       <Button variant="outline" className="px-2 py-1 text-xs">
-                        Manage Images
+                        Edit {spot.category === 'restaurant' ? 'Restaurant' : 'Spot'}
                       </Button>
                     </Link>
                     <form action={deleteSpot.bind(null, spot.id)}>

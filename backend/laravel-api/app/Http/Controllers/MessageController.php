@@ -14,7 +14,7 @@ class MessageController extends Controller
         $this->assertParticipant($request->user(), $conversation);
 
         return response()->json(
-            $conversation->messages()->with('sender:id,name')->oldest()->paginate(50)
+            $conversation->messages()->with('sender:id,name,avatar_url')->oldest()->paginate(50)
         );
     }
 
@@ -44,7 +44,23 @@ class MessageController extends Controller
         ]);
         $conversation->touch();
 
-        return response()->json($message->load('sender:id,name'), 201);
+        return response()->json($message->load('sender:id,name,avatar_url'), 201);
+    }
+
+    public function markAsRead(Request $request, Conversation $conversation)
+    {
+        $user = $request->user();
+        $this->assertParticipant($user, $conversation);
+
+        // Mark all messages from the other user as read
+        $updatedCount = $conversation->messages()
+            ->where('sender_id', '!=', $user->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        \Log::info('Marked ' . $updatedCount . ' messages as read for conversation ' . $conversation->id . ' by user ' . $user->id);
+
+        return response()->json(['success' => true, 'updated' => $updatedCount]);
     }
 
     private function assertParticipant(User $user, Conversation $conversation): void

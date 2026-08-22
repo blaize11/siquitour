@@ -27,7 +27,7 @@ export function useNotifications() {
     queryFn: async () => {
       return apiFetch<NotificationsResponse>('/notifications');
     },
-    refetchInterval: 5000, // Refetch every 5 seconds for near-real-time updates
+    refetchInterval: 2000, // Refetch every 2 seconds for near real-time updates
   });
 }
 
