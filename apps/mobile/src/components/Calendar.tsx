@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from './theme';
+import { colors, radius, spacing } from './theme';
 
 interface CalendarProps {
   selectedDate?: string;
@@ -207,6 +207,7 @@ export function Calendar({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.xs,
+        marginBottom: spacing.xs,
       }}>
         <Pressable
           onPress={handlePrevMonth}
@@ -238,7 +239,7 @@ export function Calendar({
       </View>
 
       {/* Day names */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 2 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
         {dayNames.map((day) => (
           <Text
             key={day}
@@ -251,7 +252,7 @@ export function Calendar({
 
       {/* Calendar grid */}
       {weeks.map((week, weekIndex) => (
-        <View key={weekIndex} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View key={weekIndex} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
           {week.map((day, dayIndex) => {
             const isBooked = day !== null && isDateBooked(day);
             const isDisabled = day !== null && isDateDisabled(day);
@@ -284,7 +285,6 @@ export function Calendar({
                   borderWidth: isSelected ? 0 : 0.5,
                   borderColor: isBooked ? '#e0e0e0' : 'transparent',
                   opacity: isDisabled ? 0.5 : 1,
-                  gap: 1,
                 }}
               >
                 {day !== null && (
@@ -312,8 +312,8 @@ export function Calendar({
 
       {/* Selected date range display */}
       {tempStartDate && (
-        <View style={{ gap: spacing.xs, paddingHorizontal: spacing.xs, paddingTop: spacing.xs }}>
-          <View style={{ backgroundColor: colors.surface, padding: spacing.xs, borderRadius: radius.sm }}>
+        <View style={{ paddingHorizontal: spacing.xs, paddingTop: spacing.xs }}>
+          <View style={{ backgroundColor: colors.surface, padding: spacing.xs, borderRadius: radius.sm, marginBottom: spacing.xs }}>
             <Text style={{ fontSize: 11, fontWeight: '600', marginBottom: 4, color: colors.primary }}>
               {tempStartDate}{tempEndDate && tempEndDate !== tempStartDate ? ` → ${tempEndDate}` : ''}
             </Text>
@@ -323,7 +323,7 @@ export function Calendar({
           </View>
 
           {isSelectingRange && tempEndDate === undefined && (
-            <Text style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>
+            <Text style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: spacing.xs }}>
               Click end date or Book
             </Text>
           )}
@@ -363,30 +363,32 @@ export function Calendar({
       )}
 
       {/* Legend */}
-      <View style={{ gap: 4, marginTop: spacing.xs, paddingHorizontal: spacing.xs, flexDirection: 'row', flexWrap: 'wrap' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+      <View style={{ marginTop: spacing.xs, paddingHorizontal: spacing.xs, flexDirection: 'row', flexWrap: 'wrap' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.md, marginBottom: 4 }}>
           <View
             style={{
               width: 10,
               height: 10,
               borderRadius: 2,
               backgroundColor: colors.primary,
+              marginRight: 3,
             }}
           />
           <Text style={{ fontSize: 10 }}>Selected</Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.md, marginBottom: 4 }}>
           <View
             style={{
               width: 10,
               height: 10,
               borderRadius: 2,
               backgroundColor: colors.primary + '40',
+              marginRight: 3,
             }}
           />
           <Text style={{ fontSize: 10 }}>Range</Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
           <View
             style={{
               width: 10,
@@ -395,6 +397,7 @@ export function Calendar({
               backgroundColor: '#f3f3f3',
               borderWidth: 0.5,
               borderColor: '#e0e0e0',
+              marginRight: 3,
             }}
           />
           <Text style={{ fontSize: 10 }}>Booked</Text>
