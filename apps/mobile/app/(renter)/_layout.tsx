@@ -50,15 +50,6 @@ export default function RenterLayout() {
         }}
       />
       <Tabs.Screen
-        name="reviews"
-        options={{
-          title: 'Reviews',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="star" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="chat/index"
         options={{
           title: 'Chat',
@@ -132,6 +123,13 @@ export default function RenterLayout() {
         options={{
           href: null,
           title: 'Notifications',
+        }}
+      />
+      <Tabs.Screen
+        name="reviews"
+        options={{
+          href: null,
+          title: 'Reviews',
         }}
       />
     </Tabs>

@@ -59,7 +59,7 @@ export default function GuestLayout() {
         }}
       />
 
-      {/* Hide detail routes - accessible via programmatic navigation only */}
+      {/* Hide detail routes & reviews - accessible via programmatic navigation only */}
       <Tabs.Screen
         name="guide/[id]"
         options={{

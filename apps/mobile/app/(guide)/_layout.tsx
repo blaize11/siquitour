@@ -58,15 +58,6 @@ export default function GuideLayout() {
         }}
       />
       <Tabs.Screen
-        name="reviews"
-        options={{
-          title: 'Reviews',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="star-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
@@ -124,6 +115,13 @@ export default function GuideLayout() {
         options={{
           href: null,
           title: 'Notifications',
+        }}
+      />
+      <Tabs.Screen
+        name="reviews"
+        options={{
+          href: null,
+          title: 'Reviews',
         }}
       />
     </Tabs>
