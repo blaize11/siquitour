@@ -16,3 +16,5 @@ export * from './cards';
 export { ImageCarousel } from './ImageCarousel';
 export { NotificationBell } from './NotificationBell';
 export { ChatBadgeIcon } from './ChatBadgeIcon';
+export { ChatButton } from './ChatButton';
+export { default as VerificationModal } from './VerificationModal';

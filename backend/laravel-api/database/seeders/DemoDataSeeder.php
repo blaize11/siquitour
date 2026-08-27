@@ -14,6 +14,17 @@ class DemoDataSeeder extends Seeder
     {
         $admin = User::where('role', 'admin')->first();
 
+        // Guest account
+        User::firstOrCreate(
+            ['email' => 'guest@siquitour.app'],
+            [
+                'name' => 'John Guest',
+                'password' => bcrypt('password'),
+                'role' => 'guest',
+                'email_verified_at' => now(),
+            ]
+        );
+
         $guide = User::factory()->tourGuide()->create([
             'name' => 'Maria Santos',
             'email' => 'guide@siquitour.app',

@@ -27,7 +27,16 @@ export default function GuestLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map" size={size} color={color} />
+            <Ionicons name="compass" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="bookings/index"
+        options={{
+          title: 'Bookings',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />
@@ -50,15 +59,70 @@ export default function GuestLayout() {
         }}
       />
 
-      <Tabs.Screen name="guide/[id]" options={{ href: null, title: 'Guide' }} />
-      <Tabs.Screen name="rental/[id]" options={{ href: null, title: 'Rental' }} />
-      <Tabs.Screen name="spot/[id]" options={{ href: null, title: 'Spot' }} />
-      <Tabs.Screen name="restaurant/[id]" options={{ href: null, title: 'Restaurant' }} />
-      <Tabs.Screen name="bookings/[id]" options={{ href: null, title: 'Booking' }} />
-      <Tabs.Screen name="chat/[id]" options={{ href: null, title: 'Conversation' }} />
-      <Tabs.Screen name="notifications" options={{ href: null, title: 'Notifications' }} />
-      <Tabs.Screen name="reviews" options={{ href: null, title: 'Reviews' }} />
-      <Tabs.Screen name="bookings/index" options={{ href: null, title: 'Bookings' }} />
+      {/* Hide detail routes - accessible via programmatic navigation only */}
+      <Tabs.Screen
+        name="guide/[id]"
+        options={{
+          href: null,
+          title: 'Guide',
+        }}
+      />
+      <Tabs.Screen
+        name="rental/[id]"
+        options={{
+          href: null,
+          title: 'Rental',
+        }}
+      />
+      <Tabs.Screen
+        name="spot/[id]"
+        options={{
+          href: null,
+          title: 'Spot',
+        }}
+      />
+      <Tabs.Screen
+        name="restaurant/[id]"
+        options={{
+          href: null,
+          title: 'Restaurant',
+        }}
+      />
+      <Tabs.Screen
+        name="bookings/[id]"
+        options={{
+          href: null,
+          title: 'Booking',
+        }}
+      />
+      <Tabs.Screen
+        name="chat/[id]"
+        options={{
+          href: null,
+          title: 'Conversation',
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+          title: 'Notifications',
+        }}
+      />
+      <Tabs.Screen
+        name="reviews"
+        options={{
+          href: null,
+          title: 'Reviews',
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          href: null,
+          title: 'Search',
+        }}
+      />
     </Tabs>
   );
 }

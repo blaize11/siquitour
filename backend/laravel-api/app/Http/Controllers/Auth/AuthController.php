@@ -21,7 +21,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', Rule::in(['guest', 'tour_guide', 'renter'])],
             'phone' => ['nullable', 'string', 'max:30'],
         ]);
@@ -32,6 +32,7 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
             'phone' => $validated['phone'] ?? null,
+            // email_verified_at is NULL - user must verify email before login
         ]);
 
         if ($user->role === 'tour_guide') {
@@ -40,11 +41,20 @@ class AuthController extends Controller
             RenterProfile::create(['user_id' => $user->id]);
         }
 
-        $token = $user->createToken('mobile')->plainTextToken;
+        // Send verification email
+        try {
+            $verificationCode = AuthService::requestEmailVerification($user->email);
+            Mail::to($user->email)->send(
+                new \App\Mail\EmailVerificationCodeMail($user->name, $verificationCode->code)
+            );
+        } catch (\Exception $e) {
+            // Log error but don't fail registration
+            \Log::error('Failed to send verification email', ['email' => $user->email, 'error' => $e->getMessage()]);
+        }
 
         return response()->json([
-            'user' => $user,
-            'token' => $token,
+            'message' => 'Account created successfully. Please verify your email to login.',
+            'email' => $user->email,
         ], 201);
     }
 
@@ -60,6 +70,13 @@ class AuthController extends Controller
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        // Check if email is verified
+        if ($user->email_verified_at === null) {
+            throw ValidationException::withMessages([
+                'email' => ['Please verify your email address before logging in.'],
             ]);
         }
 
@@ -195,5 +212,56 @@ class AuthController extends Controller
                 'code' => [$e->getMessage()],
             ]);
         }
+    }
+
+    /**
+     * Send email verification code.
+     */
+    public function sendVerificationCode(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $verificationCode = AuthService::requestEmailVerification($validated['email']);
+
+        // Send email
+        Mail::to($validated['email'])->send(
+            new \App\Mail\EmailVerificationCodeMail('User', $verificationCode->code)
+        );
+
+        // Return privacy-safe message regardless of whether email exists
+        return response()->json([
+            'message' => 'If an account exists for this email, a verification code has been sent.',
+        ]);
+    }
+
+    /**
+     * Verify email with code.
+     */
+    public function verifyEmailCode(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'string', 'size:6'],
+        ]);
+
+        if (!AuthService::verifyEmailCode($validated['email'], $validated['code'])) {
+            throw ValidationException::withMessages([
+                'code' => ['The verification code is incorrect or has expired.'],
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Email verified successfully. You can now log in.',
+        ]);
+    }
+
+    /**
+     * Resend verification email (alias for sendVerificationCode).
+     */
+    public function resendVerificationEmail(Request $request)
+    {
+        return $this->sendVerificationCode($request);
     }
 }

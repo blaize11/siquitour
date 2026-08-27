@@ -9,7 +9,12 @@
     "userInterfaceStyle": "light",
     "ios": {
       "bundleIdentifier": "com.siquitour.mobile",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow SiquiTour to access your camera to capture driver's license photos for verification.",
+        "NSPhotoLibraryUsageDescription": "Allow SiquiTour to access your photos for driver's license verification.",
+        "NSPhotoLibraryAddUsageDescription": "Allow SiquiTour to save photos from your camera."
+      }
     },
     "android": {
       "package": "com.siquitour.mobile",
@@ -19,7 +24,12 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -28,7 +38,19 @@
       "expo-router",
       "expo-secure-store",
       "@react-native-community/datetimepicker",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos for driver's license verification",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to capture driver's license photos"
+        }
+      ]
+    ],
+    "permissions": [
+      "CAMERA",
+      "READ_EXTERNAL_STORAGE",
+      "WRITE_EXTERNAL_STORAGE"
     ],
     "experiments": {
       "typedRoutes": true

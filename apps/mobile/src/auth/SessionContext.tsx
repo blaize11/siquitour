@@ -17,10 +17,12 @@ type SessionContextValue = {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<{ email: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   googleLogin: (googleId: string, email: string, name: string, avatar?: string) => Promise<void>;
+  sendVerificationCode: (email: string) => Promise<void>;
+  verifyEmailCode: (email: string, code: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   verifyResetCode: (email: string, code: string) => Promise<void>;
   resetPassword: (email: string, code: string, password: string, passwordConfirmation: string) => Promise<void>;
@@ -59,13 +61,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (input: RegisterInput) => {
-    const result = await apiFetch<{ user: User; token: string }>('/register', {
+    const result = await apiFetch<{ message: string; email: string }>('/register', {
       method: 'POST',
-      body: input,
+      body: {
+        ...input,
+        password_confirmation: input.password, // Add password confirmation
+      },
     });
-    await tokenStorage.set(result.token);
-    setAuthToken(result.token);
-    setUser(result.user);
+    // Don't auto-login - user must verify email first
+    return { email: result.email };
   }, []);
 
   const logout = useCallback(async () => {
@@ -91,6 +95,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await tokenStorage.set(result.token);
     setAuthToken(result.token);
     setUser(result.user);
+  }, []);
+
+  const sendVerificationCode = useCallback(async (email: string) => {
+    await apiFetch('/email/send-verification-code', {
+      method: 'POST',
+      body: { email },
+    });
+  }, []);
+
+  const verifyEmailCode = useCallback(async (email: string, code: string) => {
+    await apiFetch('/email/verify-code', {
+      method: 'POST',
+      body: { email, code },
+    });
   }, []);
 
   const requestPasswordReset = useCallback(async (email: string) => {
@@ -135,6 +153,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         logout,
         refreshUser,
         googleLogin,
+        sendVerificationCode,
+        verifyEmailCode,
         requestPasswordReset,
         verifyResetCode,
         resetPassword,

@@ -241,13 +241,6 @@ class ExploreController extends Controller
             );
         }
 
-        // Filter by price
-        if ($request->filled('max_price')) {
-            $query->whereHas('tourGuideProfile', fn($q) =>
-                $q->where('rate_per_pax', '<=', $request->input('max_price'))
-            );
-        }
-
         // Sort
         $sort = $request->input('sort', 'latest');
         if ($sort === 'rating') {

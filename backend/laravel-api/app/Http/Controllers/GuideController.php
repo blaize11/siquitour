@@ -36,13 +36,6 @@ class GuideController extends Controller
             });
         }
 
-        // Filter by maximum price
-        if ($request->filled('max_price')) {
-            $query->whereHas('tourGuideProfile', function ($q) use ($request) {
-                $q->where('rate_per_pax', '<=', $request->input('max_price'));
-            });
-        }
-
         // Filter by verification status
         if ($request->input('verified') === 'true') {
             $query->whereHas('tourGuideProfile', function ($q) {
@@ -111,7 +104,6 @@ class GuideController extends Controller
         $validated = $request->validate([
             'bio' => 'nullable|string|max:1000',
             'years_experience' => 'nullable|integer|min:0|max:100',
-            'rate_per_pax' => 'nullable|numeric|min:0',
             'additional_services' => 'nullable|string|max:1000',
         ]);
 

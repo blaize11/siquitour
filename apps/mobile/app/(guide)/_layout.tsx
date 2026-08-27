@@ -1,16 +1,15 @@
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs } from 'expo-router';
+import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, NotificationBell, ChatBadgeIcon } from '../../src/components';
 
 export default function GuideLayout() {
-  const router = useRouter();
-
   return (
     <Tabs screenOptions={{
       headerTintColor: colors.text,
       tabBarActiveTintColor: colors.primary,
       headerRight: () => (
-        <NotificationBell onPress={() => router.push('/(guide)/notifications')} />
+        <NotificationBell />
       ),
     }}>
       <Tabs.Screen
@@ -36,7 +35,7 @@ export default function GuideLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map" size={size} color={color} />
+            <Ionicons name="compass" size={size} color={color} />
           ),
         }}
       />
@@ -77,10 +76,56 @@ export default function GuideLayout() {
         }}
       />
 
-      <Tabs.Screen name="chat/[id]" options={{ href: null, title: 'Conversation' }} />
-      <Tabs.Screen name="notifications" options={{ href: null, title: 'Notifications' }} />
-      <Tabs.Screen name="spot/[id]" options={{ href: null, title: 'Spot' }} />
-      <Tabs.Screen name="restaurant/[id]" options={{ href: null, title: 'Restaurant' }} />
+      {/* Hide detail routes - accessible via programmatic navigation only */}
+      <Tabs.Screen
+        name="chat/[id]"
+        options={{
+          href: null,
+          title: 'Conversation',
+        }}
+      />
+      <Tabs.Screen
+        name="guide/[id]"
+        options={{
+          href: null,
+          title: 'Guide',
+        }}
+      />
+      <Tabs.Screen
+        name="rental/[id]"
+        options={{
+          href: null,
+          title: 'Rental',
+        }}
+      />
+      <Tabs.Screen
+        name="restaurant/[id]"
+        options={{
+          href: null,
+          title: 'Restaurant',
+        }}
+      />
+      <Tabs.Screen
+        name="spot/[id]"
+        options={{
+          href: null,
+          title: 'Spot',
+        }}
+      />
+      <Tabs.Screen
+        name="bookings/[id]"
+        options={{
+          href: null,
+          title: 'Booking',
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+          title: 'Notifications',
+        }}
+      />
     </Tabs>
   );
 }

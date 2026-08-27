@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\EmailVerificationCode;
 use App\Models\PasswordResetCode;
 use App\Models\RenterProfile;
 use App\Models\TourGuideProfile;
@@ -16,6 +17,14 @@ class AuthService
      * Generate a 6-digit random code.
      */
     public static function generateResetCode(): string
+    {
+        return str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Generate a 6-digit verification code (same format as reset code).
+     */
+    public static function generateVerificationCode(): string
     {
         return str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     }
@@ -96,6 +105,60 @@ class AuthService
         $resetCode->delete();
 
         return $user;
+    }
+
+    /**
+     * Request an email verification code.
+     */
+    public static function requestEmailVerification(string $email): EmailVerificationCode
+    {
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            // For privacy: don't reveal whether email exists, just create a code anyway
+            // This prevents account enumeration attacks
+        }
+
+        // Invalidate previous codes
+        EmailVerificationCode::where('email', $email)->delete();
+
+        // Generate and store new code
+        $code = self::generateVerificationCode();
+        $expiresAt = now()->addMinutes(10);
+
+        return EmailVerificationCode::create([
+            'email' => $email,
+            'code' => $code,
+            'expires_at' => $expiresAt,
+        ]);
+    }
+
+    /**
+     * Verify an email verification code.
+     */
+    public static function verifyEmailCode(string $email, string $code): bool
+    {
+        $verificationCode = EmailVerificationCode::where('email', $email)
+            ->where('code', $code)
+            ->first();
+
+        if (!$verificationCode) {
+            return false;
+        }
+
+        if (!$verificationCode->isValid()) {
+            return false;
+        }
+
+        $verificationCode->markAsVerified();
+
+        // Mark user email as verified
+        $user = User::where('email', $email)->first();
+        if ($user) {
+            $user->update(['email_verified_at' => now()]);
+        }
+
+        return true;
     }
 
     /**

@@ -12,14 +12,13 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'bio' => ['nullable', 'string', 'max:2000'],
             'years_experience' => ['nullable', 'integer', 'min:0', 'max:80'],
-            'rate_per_pax' => ['nullable', 'numeric', 'min:0'],
             'phone' => ['nullable', 'string', 'max:30'],
             'avatar_url' => ['nullable', 'string', 'max:2048'],
         ]);
 
         $user = $request->user();
         $user->fill($request->only(['phone', 'avatar_url']))->save();
-        $user->tourGuideProfile()->update($request->only(['bio', 'years_experience', 'rate_per_pax']));
+        $user->tourGuideProfile()->update($request->only(['bio', 'years_experience']));
 
         return response()->json($user->fresh('tourGuideProfile'));
     }

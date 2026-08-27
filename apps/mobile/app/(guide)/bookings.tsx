@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
   useAcceptBooking,
   useBookings,
   useCompleteBooking,
   useDeclineBooking,
+  useReplyToReview,
 } from '../../src/api/queries/bookings';
 import {
   ErrorView,
   LoadingView,
+  RatingStars,
   ScreenContainer,
   colors,
   spacing,
@@ -22,11 +23,16 @@ type BookingStatus = 'all' | 'pending' | 'accepted' | 'completed' | 'declined';
 
 export default function GuideBookingsScreen() {
   const [activeStatus, setActiveStatus] = useState<BookingStatus>('all');
+  const [expandedBookingId, setExpandedBookingId] = useState<number | null>(null);
+  const [replyingToReviewId, setReplyingToReviewId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [replyError, setReplyError] = useState<string | null>(null);
 
   const { data: bookingData, isLoading, isError, error: errorMsg, refetch } = useBookings();
   const acceptBooking = useAcceptBooking();
   const declineBooking = useDeclineBooking();
   const completeBooking = useCompleteBooking();
+  const replyToReview = useReplyToReview();
 
   if (isLoading) return <LoadingView />;
   if (isError) return <ErrorView message={extractErrorMessage(errorMsg)} onRetry={refetch} />;
@@ -66,21 +72,46 @@ export default function GuideBookingsScreen() {
     completeBooking.mutate(bookingId);
   };
 
+  const handleReply = async (reviewId: number) => {
+    setReplyError(null);
+    if (!replyText.trim()) {
+      setReplyError('Please enter a reply');
+      return;
+    }
+    try {
+      await replyToReview.mutateAsync({
+        reviewId,
+        reply: replyText,
+      });
+      setReplyText('');
+      setReplyingToReviewId(null);
+      await refetch();
+    } catch (err) {
+      setReplyError(extractErrorMessage(err, 'Unable to submit reply.'));
+    }
+  };
+
   const busy = acceptBooking.isPending || declineBooking.isPending || completeBooking.isPending;
+  const isExpanded = (bookingId: number) => expandedBookingId === bookingId;
+  const toggleExpand = (bookingId: number) => {
+    setExpandedBookingId(isExpanded(bookingId) ? null : bookingId);
+  };
 
   return (
-    <ScreenContainer scroll={true} style={{ padding: 0 }}>
+    <ScreenContainer scroll={false} style={{ padding: 0 }}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>My Bookings</Text>
-        <View style={{ width: 32 }} />
+        <Text style={styles.headerTitle}>📅 My Bookings</Text>
+        <Text style={styles.headerSubtitle}>Manage all your tours in one place</Text>
       </View>
 
       {/* Status Filters */}
-      <View style={styles.filterContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterContainer}
+        contentContainerStyle={styles.filterContent}
+      >
         {bookingStatuses.map((status) => (
           <Pressable
             key={status.key}
@@ -108,18 +139,18 @@ export default function GuideBookingsScreen() {
             </Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
 
-      {/* Bookings List */}
-      <View style={styles.bookingsList}>
+      {/* Bookings List - Scrollable */}
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.bookingsList}>
         {filteredBookings.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>📅</Text>
             <Text style={styles.emptyText}>No bookings found</Text>
             <Text style={styles.emptySubtext}>
               {activeStatus === 'all'
-                ? 'You don\'t have any bookings yet'
-                : `You don\'t have any ${activeStatus} bookings`}
+                ? "You don't have any bookings yet"
+                : `You don't have any ${activeStatus} bookings`}
             </Text>
           </View>
         ) : (
@@ -130,34 +161,61 @@ export default function GuideBookingsScreen() {
                 <BookingDetailCard
                   key={booking.id}
                   booking={booking}
+                  isExpanded={isExpanded(booking.id)}
+                  onToggleExpand={() => toggleExpand(booking.id)}
                   onAccept={() => handleAccept(String(booking.id))}
                   onDecline={() => handleDecline(String(booking.id))}
                   onComplete={() => handleComplete(String(booking.id))}
+                  onReply={() => handleReply(booking.review?.id)}
+                  onReplyingChange={(replyingId) => setReplyingToReviewId(replyingId)}
+                  replyingToReviewId={replyingToReviewId}
+                  replyText={replyText}
+                  onReplyTextChange={setReplyText}
+                  replyError={replyError}
                   busy={busy}
+                  replyLoading={replyToReview.isPending}
                 />
               ))}
             </View>
           ))
         )}
-      </View>
+      </ScrollView>
     </ScreenContainer>
   );
 }
 
 interface BookingDetailCardProps {
   booking: any;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
   onAccept: () => void;
   onDecline: () => void;
   onComplete: () => void;
+  onReply: () => void;
+  onReplyingChange: (id: number | null) => void;
+  replyingToReviewId: number | null;
+  replyText: string;
+  onReplyTextChange: (text: string) => void;
+  replyError: string | null;
   busy: boolean;
+  replyLoading: boolean;
 }
 
 function BookingDetailCard({
   booking,
+  isExpanded,
+  onToggleExpand,
   onAccept,
   onDecline,
   onComplete,
+  onReply,
+  onReplyingChange,
+  replyingToReviewId,
+  replyText,
+  onReplyTextChange,
+  replyError,
   busy,
+  replyLoading,
 }: BookingDetailCardProps) {
   const startTime = new Date(booking.start_date).toLocaleTimeString([], {
     hour: '2-digit',
@@ -171,72 +229,188 @@ function BookingDetailCard({
       })
     : null;
 
+  const guest = booking.guest;
+  const review = booking.review;
+
   return (
-    <View style={styles.bookingCard}>
-      {/* Guest Info & Status */}
+    <Pressable onPress={onToggleExpand} style={styles.bookingCard}>
+      {/* Collapsed View - Always Visible */}
       <View style={styles.bookingTop}>
         <View style={styles.guestInfo}>
-          <Text style={styles.guestName}>{booking.guest?.name || 'Guest'}</Text>
-          <Text style={styles.guestEmail}>{booking.guest?.email}</Text>
+          <Text style={styles.guestName}>{guest?.name || 'Guest'}</Text>
+          <Text style={styles.guestEmail}>{guest?.email}</Text>
         </View>
         <StatusBadge status={booking.status} />
       </View>
 
-      {/* Tour Details */}
+      {/* Quick Tour Details */}
       <View style={styles.tourDetails}>
         <DetailRow icon="🗺️" label="Tour" value={booking.tour_name || 'Tour'} />
         <DetailRow icon="⏰" label="Time" value={`${startTime}${endTime ? ` - ${endTime}` : ''}`} />
         <DetailRow icon="👥" label="Guests" value={`${booking.pax_count} Pax`} />
-        {booking.notes && (
-          <DetailRow icon="💬" label="Notes" value={booking.notes} />
-        )}
       </View>
 
-      {/* Actions based on status */}
-      {booking.status === 'pending' && (
-        <View style={styles.actionButtons}>
-          <Pressable
-            style={[styles.button, styles.acceptButton]}
-            onPress={onAccept}
-            disabled={busy}
-          >
-            <Text style={styles.acceptButtonText}>✓ Accept</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.button, styles.declineButton]}
-            onPress={onDecline}
-            disabled={busy}
-          >
-            <Text style={styles.declineButtonText}>✕ Decline</Text>
-          </Pressable>
-        </View>
-      )}
+      {/* Expand/Collapse Indicator */}
+      <Text style={styles.expandIndicator}>
+        {isExpanded ? '▲ Collapse' : '▼ Tap to expand'}
+      </Text>
 
-      {booking.status === 'accepted' && (
-        <Pressable
-          style={[styles.button, styles.completeButton]}
-          onPress={onComplete}
-          disabled={busy}
-        >
-          <Text style={styles.completeButtonText}>✓ Mark Complete</Text>
-        </Pressable>
-      )}
+      {/* Expanded Content */}
+      {isExpanded && (
+        <>
+          {/* Additional Details */}
+          {booking.notes && (
+            <View style={styles.expandedSection}>
+              <Text style={styles.sectionLabel}>💬 Guest Notes</Text>
+              <Text style={styles.notesText}>{booking.notes}</Text>
+            </View>
+          )}
 
-      {booking.status === 'completed' && (
-        <Pressable
-          style={[styles.button, styles.reviewButton]}
-          onPress={() => router.push(`/(guide)/bookings/${booking.id}`)}
-        >
-          <Text style={styles.reviewButtonText}>👁️ View Reviews</Text>
-        </Pressable>
-      )}
+          {/* Guest Information */}
+          {guest && (
+            <View style={styles.expandedSection}>
+              <Text style={styles.sectionLabel}>👤 Guest Information</Text>
+              <DetailRow icon="📧" label="Email" value={guest.email} />
+              {guest.phone && <DetailRow icon="📞" label="Phone" value={guest.phone} />}
+              <DetailRow icon="👤" label="Role" value={guest.role || 'Tourist'} />
+            </View>
+          )}
 
-      {booking.status === 'declined' && (
-        <View style={styles.declinedBadge}>
-          <Text style={styles.declinedText}>✕ Booking Declined</Text>
-        </View>
+          {/* Booking Summary */}
+          <View style={styles.expandedSection}>
+            <Text style={styles.sectionLabel}>💰 Booking Summary</Text>
+            <DetailRow
+              icon="📅"
+              label="Date"
+              value={new Date(booking.start_date).toLocaleDateString()}
+            />
+            {booking.end_date && (
+              <DetailRow
+                icon="🏁"
+                label="End Date"
+                value={new Date(booking.end_date).toLocaleDateString()}
+              />
+            )}
+            <DetailRow icon="👥" label="Pax" value={String(booking.pax_count)} />
+            {booking.total_price && (
+              <DetailRow
+                icon="💵"
+                label="Total Price"
+                value={`₱${parseFloat(booking.total_price).toLocaleString()}`}
+              />
+            )}
+          </View>
+
+          {/* Reviews Section */}
+          {review ? (
+            <View style={styles.expandedSection}>
+              <Text style={styles.sectionLabel}>⭐ Guest Review</Text>
+
+              {/* Rating */}
+              <View style={styles.ratingContainer}>
+                <View style={styles.starsContainer}>
+                  <RatingStars rating={review.rating} size={20} />
+                  <Text style={styles.ratingText}>{review.rating}.0 / 5.0</Text>
+                </View>
+              </View>
+
+              {/* Review Comment */}
+              <Text style={styles.reviewComment}>{review.comment}</Text>
+              <Text style={styles.reviewDate}>
+                {new Date(review.created_at).toLocaleDateString()}
+              </Text>
+
+              {/* Reply Section */}
+              {review.reply ? (
+                <View style={styles.replyBox}>
+                  <Text style={styles.replyLabel}>Your Reply</Text>
+                  <Text style={styles.replyText}>{review.reply}</Text>
+                </View>
+              ) : replyingToReviewId === review.id ? (
+                <View style={styles.replyInputContainer}>
+                  {replyError && (
+                    <Text style={styles.replyErrorText}>{replyError}</Text>
+                  )}
+                  <TextInput
+                    style={styles.replyInput}
+                    placeholder="Write your reply..."
+                    placeholderTextColor={colors.textMuted}
+                    value={replyText}
+                    onChangeText={onReplyTextChange}
+                    multiline
+                    numberOfLines={3}
+                  />
+                  <View style={styles.replyActions}>
+                    <Pressable
+                      style={[styles.button, styles.sendButton]}
+                      onPress={onReply}
+                      disabled={replyLoading}
+                    >
+                      <Text style={styles.sendButtonText}>
+                        {replyLoading ? 'Sending...' : 'Send Reply'}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.button, styles.cancelButton]}
+                      onPress={() => {
+                        onReplyingChange(null);
+                        onReplyTextChange('');
+                      }}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <Pressable
+                  style={[styles.button, styles.replyButton]}
+                  onPress={() => onReplyingChange(review.id)}
+                >
+                  <Text style={styles.replyButtonText}>💬 Reply to Review</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : booking.status === 'completed' ? (
+            <View style={styles.expandedSection}>
+              <Text style={styles.sectionLabel}>⭐ Review</Text>
+              <Text style={styles.noReviewText}>Waiting for guest review...</Text>
+            </View>
+          ) : null}
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtonsContainer}>
+            {booking.status === 'pending' && (
+              <>
+                <Pressable
+                  style={[styles.actionButton, styles.acceptActionButton]}
+                  onPress={onAccept}
+                  disabled={busy}
+                >
+                  <Text style={styles.acceptActionText}>✓ Accept</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.actionButton, styles.declineActionButton]}
+                  onPress={onDecline}
+                  disabled={busy}
+                >
+                  <Text style={styles.declineActionText}>✕ Decline</Text>
+                </Pressable>
+              </>
+            )}
+
+            {booking.status === 'accepted' && (
+              <Pressable
+                style={[styles.actionButton, styles.completeActionButton]}
+                onPress={onComplete}
+                disabled={busy}
+              >
+                <Text style={styles.completeActionText}>✓ Mark Complete</Text>
+              </Pressable>
+            )}
+          </View>
+        </>
       )}
-    </View>
+    </Pressable>
   );
 }
 
@@ -260,38 +434,31 @@ function DetailRow({ icon, label, value }: DetailRowProps) {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.primary,
+    paddingVertical: spacing.lg,
+    backgroundColor: colors.primary,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: spacing.xs,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
 
   filterContainer: {
-    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  filterContent: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     gap: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   filterChip: {
     flexDirection: 'column',
@@ -396,10 +563,39 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
 
+  expandIndicator: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingVertical: spacing.sm,
+  },
+
+  expandedSection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+
+  notesText: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 20,
+  },
+
   detailRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
 
   detailIcon: {
@@ -423,9 +619,81 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
-  actionButtons: {
+  ratingContainer: {
+    marginBottom: spacing.md,
+  },
+
+  starsContainer: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+
+  ratingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+
+  reviewComment: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 20,
+    marginBottom: spacing.sm,
+  },
+
+  reviewDate: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
+
+  replyBox: {
+    backgroundColor: colors.primary + '15',
+    borderRadius: 8,
+    padding: spacing.md,
+    marginTop: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+
+  replyLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+
+  replyText: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 20,
+  },
+
+  replyInputContainer: {
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+
+  replyInput: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    fontSize: 14,
+    color: colors.text,
+    minHeight: 80,
+  },
+
+  replyErrorText: {
+    fontSize: 12,
+    color: colors.danger,
+  },
+
+  replyActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
   },
 
   button: {
@@ -436,52 +704,86 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  acceptButton: {
-    backgroundColor: colors.success,
+  sendButton: {
+    backgroundColor: colors.primary,
   },
-  acceptButtonText: {
+
+  sendButtonText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 13,
   },
 
-  declineButton: {
+  cancelButton: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  cancelButtonText: {
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+
+  replyButton: {
+    backgroundColor: colors.primary,
+  },
+
+  replyButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+
+  noReviewText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+  },
+
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+
+  actionButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  acceptActionButton: {
+    backgroundColor: colors.success,
+  },
+
+  acceptActionText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+
+  declineActionButton: {
     backgroundColor: '#ffebee',
     borderWidth: 1,
     borderColor: colors.danger,
   },
-  declineButtonText: {
+
+  declineActionText: {
     color: colors.danger,
     fontWeight: '600',
     fontSize: 13,
   },
 
-  completeButton: {
+  completeActionButton: {
     backgroundColor: colors.primary,
   },
-  completeButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
 
-  reviewButton: {
-    backgroundColor: colors.primary,
-  },
-  reviewButtonText: {
+  completeActionText: {
     color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-
-  declinedBadge: {
-    backgroundColor: '#ffebee',
-    paddingVertical: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  declinedText: {
-    color: colors.danger,
     fontWeight: '600',
     fontSize: 13,
   },

@@ -4,7 +4,6 @@ import { router } from 'expo-router';
 import { useGuides } from '../../../src/api/queries/guides';
 import { useRentals } from '../../../src/api/queries/rentals';
 import { useSpots } from '../../../src/api/queries/spots';
-import { SiquiTourMap, LocationCard } from '../../../src/components/map';
 import {
   TourGuideCard,
   RentalCard,
@@ -18,7 +17,6 @@ import {
   typography,
 } from '../../../src/components';
 import { extractErrorMessage } from '../../../src/components/ErrorView';
-import type { MapLocation } from '../../../src/types/api';
 
 type FilterType = 'all' | 'tour_guides' | 'rentals' | 'spots' | 'food';
 
@@ -32,8 +30,6 @@ const FILTERS: { key: FilterType; label: string }[] = [
 
 export default function GuideExploreScreen() {
   const [filter, setFilter] = useState<FilterType>('all');
-  const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
-  const [showMap, setShowMap] = useState(false);
 
   const { data: guidesData, isLoading: guidesLoading, isError: guidesError, error: guidesErrorMsg } = useGuides();
   const { data: rentalsData, isLoading: rentalsLoading, isError: rentalsError, error: rentalsErrorMsg } = useRentals();
@@ -51,44 +47,6 @@ export default function GuideExploreScreen() {
   const rentals = rentalsData?.data || [];
   const spots = spotsData?.data || [];
 
-  // Map data for rendering
-  const guideLocations: MapLocation[] = guides
-    .filter((guide) => guide.tour_guide_profile)
-    .map((guide) => ({
-      id: guide.id,
-      name: guide.name,
-      category: 'tour_guide',
-      latitude: 9.2142,
-      longitude: 123.515,
-      description: guide.tour_guide_profile?.bio,
-      type: 'Tour Guide',
-      rate_per_pax: guide.tour_guide_profile?.rate_per_pax,
-    }));
-
-  const rentalLocations: MapLocation[] = rentals
-    .filter((rental) => rental.latitude && rental.longitude)
-    .map((rental) => ({
-      id: rental.id,
-      name: rental.title,
-      category: 'rental',
-      latitude: rental.latitude || 0,
-      longitude: rental.longitude || 0,
-      description: rental.description,
-      address: rental.address,
-      type: rental.type,
-      price_per_day: rental.price_per_day,
-    }));
-
-  const spotLocations: MapLocation[] = spots
-    .filter((spot) => spot.latitude && spot.longitude)
-    .map((spot) => ({
-      id: spot.id,
-      name: spot.name,
-      category: spot.category,
-      latitude: spot.latitude || 0,
-      longitude: spot.longitude || 0,
-      description: spot.description,
-    }));
 
   const handleGuidePress = (guideId: string) => {
     router.push(`/(guide)/guide/${guideId}`);

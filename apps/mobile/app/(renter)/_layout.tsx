@@ -36,7 +36,7 @@ export default function RenterLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map" size={size} color={color} />
+            <Ionicons name="compass" size={size} color={color} />
           ),
         }}
       />
@@ -77,12 +77,63 @@ export default function RenterLayout() {
         }}
       />
 
-      <Tabs.Screen name="rentals/new" options={{ href: null, title: 'New Listing' }} />
-      <Tabs.Screen name="rentals/[id]" options={{ href: null, title: 'Edit Listing' }} />
-      <Tabs.Screen name="chat/[id]" options={{ href: null, title: 'Conversation' }} />
-      <Tabs.Screen name="notifications" options={{ href: null, title: 'Notifications' }} />
-      <Tabs.Screen name="spot/[id]" options={{ href: null, title: 'Spot' }} />
-      <Tabs.Screen name="restaurant/[id]" options={{ href: null, title: 'Restaurant' }} />
+      {/* Hide detail routes - accessible via programmatic navigation only */}
+      <Tabs.Screen
+        name="chat/[id]"
+        options={{
+          href: null,
+          title: 'Conversation',
+        }}
+      />
+      <Tabs.Screen
+        name="guide/[id]"
+        options={{
+          href: null,
+          title: 'Guide',
+        }}
+      />
+      <Tabs.Screen
+        name="rental/[id]"
+        options={{
+          href: null,
+          title: 'Rental',
+        }}
+      />
+      <Tabs.Screen
+        name="restaurant/[id]"
+        options={{
+          href: null,
+          title: 'Restaurant',
+        }}
+      />
+      <Tabs.Screen
+        name="spot/[id]"
+        options={{
+          href: null,
+          title: 'Spot',
+        }}
+      />
+      <Tabs.Screen
+        name="rentals/new"
+        options={{
+          href: null,
+          title: 'New Listing',
+        }}
+      />
+      <Tabs.Screen
+        name="rentals/[id]"
+        options={{
+          href: null,
+          title: 'Edit Rental',
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+          title: 'Notifications',
+        }}
+      />
     </Tabs>
   );
 }

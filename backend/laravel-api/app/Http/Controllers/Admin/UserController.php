@@ -9,15 +9,45 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    /**
+     * List all users with details and verification status
+     */
     public function index(Request $request)
     {
         $users = User::query()
-            ->when($request->query('role'), fn ($query, $role) => $query->where('role', $role))
-            ->with(['tourGuideProfile', 'renterProfile'])
-            ->latest()
-            ->paginate(20);
+            ->with(['tourGuideProfile:id,user_id,verification_status'])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        return response()->json($users);
+        // Format response for mobile app
+        $formattedData = $users->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'avatar_url' => $user->avatar_url,
+                'role' => $user->role,
+                'status' => $user->status,
+                'email_verified_at' => $user->email_verified_at,
+                'created_at' => $user->created_at,
+                'tour_guide_profile' => $user->tourGuideProfile ? [
+                    'verification_status' => $user->tourGuideProfile->verification_status,
+                ] : null,
+            ];
+        });
+
+        return response()->json(['data' => $formattedData]);
+    }
+
+    /**
+     * Get single user details
+     */
+    public function show(User $user)
+    {
+        $user->load(['tourGuideProfile', 'renterProfile']);
+
+        return response()->json($user);
     }
 
     public function verify(Request $request, User $user)

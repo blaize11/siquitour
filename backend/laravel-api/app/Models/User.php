@@ -135,6 +135,17 @@ class User extends Authenticatable
         return $this->hasMany(AuditLog::class, 'admin_id');
     }
 
+    // Guide verification relationships
+    public function verificationDocument(): HasOne
+    {
+        return $this->hasOne(GuideVerificationDocument::class);
+    }
+
+    public function paxPrices(): HasMany
+    {
+        return $this->hasMany(GuidePaxPrice::class, 'tour_guide_id');
+    }
+
     /**
      * Get user's active role name.
      * Falls back to legacy 'role' column for backwards compatibility.

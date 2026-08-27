@@ -7,14 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'bio', 'years_experience', 'rate_per_pax', 'is_verified', 'additional_services'])]
+#[Fillable(['user_id', 'bio', 'years_experience', 'is_verified', 'additional_services'])]
 class TourGuideProfile extends Model
 {
     protected function casts(): array
     {
         return [
             'is_verified' => 'boolean',
-            'rate_per_pax' => 'decimal:2',
         ];
     }
 
@@ -42,5 +41,21 @@ class TourGuideProfile extends Model
                     ->withPivot('notes')
                     ->withTimestamps()
                     ->orderBy('sort_order');
+    }
+
+    /**
+     * Guide's verification document (driver's license)
+     */
+    public function verificationDocument(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->user->verificationDocument();
+    }
+
+    /**
+     * Guide's per-pax pricing
+     */
+    public function paxPrices(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->user->paxPrices();
     }
 }

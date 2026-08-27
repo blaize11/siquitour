@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CommissionController;
+use App\Http\Controllers\Admin\GuideVerificationController as AdminGuideVerificationController;
 use App\Http\Controllers\Admin\RestaurantController as AdminRestaurantController;
 use App\Http\Controllers\Admin\SpotController as AdminSpotController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -13,7 +14,9 @@ use App\Http\Controllers\FollowController;
 use App\Http\Controllers\Guide\AvailabilityController;
 use App\Http\Controllers\Guide\PackageBuilderController;
 use App\Http\Controllers\Guide\PackageController as GuidePackageController;
+use App\Http\Controllers\Guide\PricingController as GuidePricingController;
 use App\Http\Controllers\Guide\ProfileController as GuideProfileController;
+use App\Http\Controllers\Guide\VerificationController as GuideVerificationController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MessageController;
@@ -28,12 +31,30 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SpotController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Auth routes with rate limiting
+Route::middleware('throttle:10,15')->group(function () {  // 10 attempts per 15 minutes
+    Route::post('/register', [AuthController::class, 'register']);
+});
+
+Route::middleware('throttle:50,1')->group(function () {  // 50 attempts per 1 minute (for testing)
+    Route::post('/login', [AuthController::class, 'login']);
+});
+
 Route::post('/google-login', [AuthController::class, 'googleLogin']);
 
+// Email verification endpoints
+Route::middleware('throttle:10,10')->group(function () {  // 10 attempts per 10 minutes
+    Route::post('/email/send-verification-code', [AuthController::class, 'sendVerificationCode']);
+    Route::post('/email/resend-verification', [AuthController::class, 'resendVerificationEmail']);
+});
+
+Route::post('/email/verify-code', [AuthController::class, 'verifyEmailCode']);
+
 // Password reset endpoints
-Route::post('/forgot-password', [AuthController::class, 'requestPasswordReset']);
+Route::middleware('throttle:3,60')->group(function () {
+    Route::post('/forgot-password', [AuthController::class, 'requestPasswordReset']);
+});
+
 Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
@@ -125,8 +146,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Tour guide self-service.
     Route::middleware('role:tour_guide')->prefix('guide')->group(function () {
+        // Guide verification
+        Route::get('/verification/status', [GuideVerificationController::class, 'status']);
+        Route::post('/verification/submit', [GuideVerificationController::class, 'submit']);
+        Route::get('/verification/document', [GuideVerificationController::class, 'show']);
+        Route::get('/verification/document/download', [GuideVerificationController::class, 'downloadDocument']);
+
+        // Guide pricing (per-pax) - requires verification
+        Route::middleware('verified-guide')->group(function () {
+            Route::get('/prices', [GuidePricingController::class, 'index']);
+            Route::post('/prices', [GuidePricingController::class, 'store']);
+            Route::put('/prices/{price}', [GuidePricingController::class, 'update']);
+            Route::delete('/prices/{price}', [GuidePricingController::class, 'destroy']);
+        });
+
         Route::get('/profile', [GuideController::class, 'getMyProfile']);
-        Route::put('/profile', [GuideController::class, 'updateMyProfile']);
+        Route::put('/profile', [GuideController::class, 'updateMyProfile'])->middleware('verified-guide');
 
         // Guide profile inclusions.
         Route::post('/inclusions', [GuideController::class, 'addInclusion']);
@@ -134,41 +169,45 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/inclusions/{inclusion}', [GuideController::class, 'deleteInclusion']);
         Route::put('/inclusions/reorder', [GuideController::class, 'reorderInclusions']);
 
-        Route::get('/availability', [AvailabilityController::class, 'index']);
-        Route::post('/availability', [AvailabilityController::class, 'store']);
-        Route::delete('/availability/{availability}', [AvailabilityController::class, 'destroy']);
+        Route::middleware('verified-guide')->group(function () {
+            Route::get('/availability', [AvailabilityController::class, 'index']);
+            Route::post('/availability', [AvailabilityController::class, 'store']);
+            Route::delete('/availability/{availability}', [AvailabilityController::class, 'destroy']);
 
-        // Tour packages.
-        Route::get('/packages', [GuidePackageController::class, 'index']);
-        Route::post('/packages', [GuidePackageController::class, 'store']);
-        Route::put('/packages/{package}', [GuidePackageController::class, 'update']);
-        Route::delete('/packages/{package}', [GuidePackageController::class, 'destroy']);
-        Route::post('/packages/{package}/publish', [GuidePackageController::class, 'publish']);
+            // Tour packages.
+            Route::get('/packages', [GuidePackageController::class, 'index']);
+            Route::post('/packages', [GuidePackageController::class, 'store']);
+            Route::put('/packages/{package}', [GuidePackageController::class, 'update']);
+            Route::delete('/packages/{package}', [GuidePackageController::class, 'destroy']);
+            Route::post('/packages/{package}/publish', [GuidePackageController::class, 'publish']);
+        });
 
         // Package builder — days, stops, inclusions, exclusions, add-ons, rates.
-        Route::post('/packages/{package}/days', [PackageBuilderController::class, 'storeDay']);
-        Route::put('/packages/{package}/days/{day}', [PackageBuilderController::class, 'updateDay']);
-        Route::delete('/packages/{package}/days/{day}', [PackageBuilderController::class, 'destroyDay']);
+        Route::middleware('verified-guide')->group(function () {
+            Route::post('/packages/{package}/days', [PackageBuilderController::class, 'storeDay']);
+            Route::put('/packages/{package}/days/{day}', [PackageBuilderController::class, 'updateDay']);
+            Route::delete('/packages/{package}/days/{day}', [PackageBuilderController::class, 'destroyDay']);
 
-        Route::post('/packages/{package}/days/{day}/stops', [PackageBuilderController::class, 'storeStop']);
-        Route::put('/packages/{package}/days/{day}/stops/{stop}', [PackageBuilderController::class, 'updateStop']);
-        Route::delete('/packages/{package}/days/{day}/stops/{stop}', [PackageBuilderController::class, 'destroyStop']);
+            Route::post('/packages/{package}/days/{day}/stops', [PackageBuilderController::class, 'storeStop']);
+            Route::put('/packages/{package}/days/{day}/stops/{stop}', [PackageBuilderController::class, 'updateStop']);
+            Route::delete('/packages/{package}/days/{day}/stops/{stop}', [PackageBuilderController::class, 'destroyStop']);
 
-        Route::post('/packages/{package}/inclusions', [PackageBuilderController::class, 'storeInclusion']);
-        Route::put('/packages/{package}/inclusions/{inclusion}', [PackageBuilderController::class, 'updateInclusion']);
-        Route::delete('/packages/{package}/inclusions/{inclusion}', [PackageBuilderController::class, 'destroyInclusion']);
+            Route::post('/packages/{package}/inclusions', [PackageBuilderController::class, 'storeInclusion']);
+            Route::put('/packages/{package}/inclusions/{inclusion}', [PackageBuilderController::class, 'updateInclusion']);
+            Route::delete('/packages/{package}/inclusions/{inclusion}', [PackageBuilderController::class, 'destroyInclusion']);
 
-        Route::post('/packages/{package}/exclusions', [PackageBuilderController::class, 'storeExclusion']);
-        Route::put('/packages/{package}/exclusions/{exclusion}', [PackageBuilderController::class, 'updateExclusion']);
-        Route::delete('/packages/{package}/exclusions/{exclusion}', [PackageBuilderController::class, 'destroyExclusion']);
+            Route::post('/packages/{package}/exclusions', [PackageBuilderController::class, 'storeExclusion']);
+            Route::put('/packages/{package}/exclusions/{exclusion}', [PackageBuilderController::class, 'updateExclusion']);
+            Route::delete('/packages/{package}/exclusions/{exclusion}', [PackageBuilderController::class, 'destroyExclusion']);
 
-        Route::post('/packages/{package}/addons', [PackageBuilderController::class, 'storeAddon']);
-        Route::put('/packages/{package}/addons/{addon}', [PackageBuilderController::class, 'updateAddon']);
-        Route::delete('/packages/{package}/addons/{addon}', [PackageBuilderController::class, 'destroyAddon']);
+            Route::post('/packages/{package}/addons', [PackageBuilderController::class, 'storeAddon']);
+            Route::put('/packages/{package}/addons/{addon}', [PackageBuilderController::class, 'updateAddon']);
+            Route::delete('/packages/{package}/addons/{addon}', [PackageBuilderController::class, 'destroyAddon']);
 
-        Route::post('/packages/{package}/rates', [PackageBuilderController::class, 'storeRate']);
-        Route::put('/packages/{package}/rates/{rate}', [PackageBuilderController::class, 'updateRate']);
-        Route::delete('/packages/{package}/rates/{rate}', [PackageBuilderController::class, 'destroyRate']);
+            Route::post('/packages/{package}/rates', [PackageBuilderController::class, 'storeRate']);
+            Route::put('/packages/{package}/rates/{rate}', [PackageBuilderController::class, 'updateRate']);
+            Route::delete('/packages/{package}/rates/{rate}', [PackageBuilderController::class, 'destroyRate']);
+        });
     });
 
     // Renter self-service.
@@ -184,6 +223,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin management.
     Route::middleware('role:admin')->prefix('admin')->group(function () {
+        // Guide verification management
+        Route::get('/guide-verifications', [AdminGuideVerificationController::class, 'index']);
+        Route::get('/guide-verifications/{document}', [AdminGuideVerificationController::class, 'show']);
+        Route::get('/guide-verifications/{document}/download-document', [AdminGuideVerificationController::class, 'downloadDocument']);
+        Route::get('/guide-verifications/{document}/download-front', [AdminGuideVerificationController::class, 'downloadFrontImage']);
+        Route::get('/guide-verifications/{document}/download-back', [AdminGuideVerificationController::class, 'downloadBackImage']);
+        Route::post('/guide-verifications/{document}/approve', [AdminGuideVerificationController::class, 'approve']);
+        Route::post('/guide-verifications/{document}/reject', [AdminGuideVerificationController::class, 'reject']);
+
         Route::get('/users', [AdminUserController::class, 'index']);
         Route::post('/users/{user}/verify', [AdminUserController::class, 'verify']);
         Route::put('/users/{user}/status', [AdminUserController::class, 'updateStatus']);

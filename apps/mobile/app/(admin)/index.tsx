@@ -62,24 +62,24 @@ export default function AdminDashboardScreen() {
 
   const quickActions = [
     {
+      icon: '👥',
+      label: 'View Users',
+      onPress: () => router.push('/(admin)/users'),
+    },
+    {
+      icon: '✓',
+      label: 'Verify Guides',
+      onPress: () => router.push('/(admin)/guide-verifications'),
+    },
+    {
       icon: '📍',
-      label: 'Add Spot',
+      label: 'Manage Spots',
       onPress: () => router.push('/(admin)/spots'),
     },
     {
-      icon: '👤',
-      label: 'Add Guide',
-      onPress: () => router.push('/(admin)/index'),
-    },
-    {
-      icon: '🏍️',
-      label: 'Add Rental',
-      onPress: () => router.push('/(admin)/index'),
-    },
-    {
-      icon: '📅',
-      label: 'View Bookings',
-      onPress: () => router.push('/(admin)/index'),
+      icon: '💰',
+      label: 'Commission',
+      onPress: () => router.push('/(admin)/commission'),
     },
   ];
 

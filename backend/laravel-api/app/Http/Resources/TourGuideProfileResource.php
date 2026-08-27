@@ -14,7 +14,6 @@ class TourGuideProfileResource extends JsonResource
             'user_id' => $this->user_id,
             'bio' => $this->bio,
             'years_experience' => $this->years_experience,
-            'rate_per_pax' => $this->rate_per_pax,
             'is_verified' => $this->is_verified,
             'additional_services' => $this->additional_services,
             'inclusions' => GuideInclusionResource::collection($this->inclusions),

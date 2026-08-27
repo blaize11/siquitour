@@ -4,7 +4,6 @@ import { router } from 'expo-router';
 import { useGuides } from '../../src/api/queries/guides';
 import { useRentals } from '../../src/api/queries/rentals';
 import { useSpots } from '../../src/api/queries/spots';
-import { SiquiTourMap, LocationCard } from '../../src/components/map';
 import {
   TourGuideCard,
   RentalCard,
@@ -18,7 +17,6 @@ import {
   typography,
 } from '../../src/components';
 import { extractErrorMessage } from '../../src/components/ErrorView';
-import type { MapLocation } from '../../src/types/api';
 
 type FilterType = 'all' | 'tour_guides' | 'rentals' | 'spots' | 'food';
 
@@ -32,8 +30,6 @@ const FILTERS: { key: FilterType; label: string }[] = [
 
 export default function ExploreScreen() {
   const [filter, setFilter] = useState<FilterType>('all');
-  const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
-  const [showMap, setShowMap] = useState(false);
 
   const { data: guidesData, isLoading: guidesLoading, isError: guidesError, error: guidesErrorMsg } = useGuides();
   const { data: rentalsData, isLoading: rentalsLoading, isError: rentalsError, error: rentalsErrorMsg } = useRentals();
@@ -51,44 +47,6 @@ export default function ExploreScreen() {
   const rentals = rentalsData?.data || [];
   const spots = spotsData?.data || [];
 
-  // Map data for rendering
-  const guideLocations: MapLocation[] = guides
-    .filter((guide) => guide.tour_guide_profile)
-    .map((guide) => ({
-      id: guide.id,
-      name: guide.name,
-      category: 'tour_guide',
-      latitude: 9.2142,
-      longitude: 123.515,
-      description: guide.tour_guide_profile?.bio,
-      type: 'Tour Guide',
-      rate_per_pax: guide.tour_guide_profile?.rate_per_pax,
-    }));
-
-  const rentalLocations: MapLocation[] = rentals
-    .filter((rental) => rental.latitude && rental.longitude)
-    .map((rental) => ({
-      id: rental.id,
-      name: rental.title,
-      category: 'rental',
-      latitude: rental.latitude || 0,
-      longitude: rental.longitude || 0,
-      description: rental.description,
-      address: rental.address,
-      type: rental.type,
-      price_per_day: rental.price_per_day,
-    }));
-
-  const spotLocations: MapLocation[] = spots
-    .filter((spot) => spot.latitude && spot.longitude)
-    .map((spot) => ({
-      id: spot.id,
-      name: spot.name,
-      category: spot.category,
-      latitude: spot.latitude || 0,
-      longitude: spot.longitude || 0,
-      description: spot.description,
-    }));
 
   const handleGuidePress = (guideId: string) => {
     router.push(`/(guest)/guide/${guideId}`);
@@ -105,19 +63,6 @@ export default function ExploreScreen() {
   const handleRestaurantPress = (restaurantId: string) => {
     router.push(`/(guest)/restaurant/${restaurantId}`);
   };
-
-  if (showMap) {
-    return (
-      <MapView
-        guideLocations={guideLocations}
-        rentalLocations={rentalLocations}
-        spotLocations={spotLocations}
-        selectedLocation={selectedLocation}
-        onLocationSelect={setSelectedLocation}
-        onBack={() => setShowMap(false)}
-      />
-    );
-  }
 
   return (
     <ScreenContainer scroll={true} style={{ padding: 0 }}>
@@ -251,74 +196,10 @@ export default function ExploreScreen() {
             />
           )}
 
-          {/* View Map Button */}
-          <Pressable
-            onPress={() => setShowMap(true)}
-            style={styles.mapButton}
-          >
-            <Text style={styles.mapButtonText}>📍 View on Map</Text>
-          </Pressable>
         </View>
 
         <View style={{ height: spacing.lg }} />
       </View>
-    </ScreenContainer>
-  );
-}
-
-interface MapViewProps {
-  guideLocations: MapLocation[];
-  rentalLocations: MapLocation[];
-  spotLocations: MapLocation[];
-  selectedLocation: MapLocation | null;
-  onLocationSelect: (location: MapLocation | null) => void;
-  onBack: () => void;
-}
-
-function MapView({
-  guideLocations,
-  rentalLocations,
-  spotLocations,
-  selectedLocation,
-  onLocationSelect,
-  onBack,
-}: MapViewProps) {
-  const displayLocations = [...guideLocations, ...rentalLocations, ...spotLocations];
-
-  const handleNavigate = (location: MapLocation) => {
-    if (location.category === 'tour_guide') {
-      router.push(`/(guest)/guide/${location.id}`);
-    } else if (location.category === 'rental') {
-      router.push(`/(guest)/rental/${location.id}`);
-    }
-    onLocationSelect(null);
-  };
-
-  return (
-    <ScreenContainer scroll={false} style={{ padding: 0, gap: 0 }}>
-      {/* Back Button */}
-      <View style={styles.mapHeader}>
-        <Pressable onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </Pressable>
-        <Text style={styles.mapTitle}>Map</Text>
-      </View>
-
-      <SiquiTourMap
-        locations={displayLocations}
-        onMarkerPress={onLocationSelect}
-        showUserLocation={true}
-        height="100%"
-      />
-
-      {selectedLocation && (
-        <LocationCard
-          location={selectedLocation}
-          onClose={() => onLocationSelect(null)}
-          onViewDetails={() => handleNavigate(selectedLocation)}
-          onBook={() => handleNavigate(selectedLocation)}
-        />
-      )}
     </ScreenContainer>
   );
 }
@@ -391,42 +272,5 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingVertical: spacing.md,
-  },
-  mapButton: {
-    marginHorizontal: spacing.md,
-    marginVertical: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  mapButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  mapHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.md,
-  },
-  backButton: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  backButtonText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  mapTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
   },
 });

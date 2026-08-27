@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Block;
 use App\Models\Booking;
 use App\Models\CommissionSetting;
+use App\Models\GuidePaxPrice;
 use App\Models\Notification;
 use App\Models\Rental;
 use App\Models\User;
+use App\Services\GuidePricingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -68,9 +70,18 @@ class BookingController extends Controller
 
             abort_unless($validated['pax_count'] ?? null, 422, 'pax_count is required when booking a tour guide.');
 
+            // Check guide is verified
+            $profile = $guide->tourGuideProfile;
+            abort_unless($profile && $profile->verification_status === 'approved', 403, 'This tour guide is not currently accepting bookings.');
+
             $this->assertNotBlocked($user, $guide);
 
-            $totalPrice = (float) $guide->tourGuideProfile->rate_per_pax * $validated['pax_count'];
+            // Validate and get price for this pax count
+            $paxPrice = GuidePricingService::getPriceForPax($guide, $validated['pax_count']);
+            abort_unless($paxPrice, 422, 'No pricing configured for this group size. Please contact the tour guide.');
+
+            $totalPrice = (float) $paxPrice->price;
+
             $bookableType = User::class;
             $bookableId = $guide->id;
         } else {
