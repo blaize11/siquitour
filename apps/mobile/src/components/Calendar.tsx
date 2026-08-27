@@ -315,8 +315,7 @@ export function Calendar({
         <View style={{ gap: spacing.xs, paddingHorizontal: spacing.xs, paddingTop: spacing.xs }}>
           <View style={{ backgroundColor: colors.surface, padding: spacing.xs, borderRadius: radius.sm }}>
             <Text style={{ fontSize: 11, fontWeight: '600', marginBottom: 4, color: colors.primary }}>
-              {tempStartDate}
-              {tempEndDate && tempEndDate !== tempStartDate ? ` → ${tempEndDate}` : ''}
+              {tempStartDate}{tempEndDate && tempEndDate !== tempStartDate ? ` → ${tempEndDate}` : ''}
             </Text>
             <Text style={{ fontSize: 10, color: colors.primary }}>
               {getDayCount()} day{getDayCount() > 1 ? 's' : ''}
