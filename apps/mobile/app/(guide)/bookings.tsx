@@ -39,10 +39,9 @@ export default function GuideBookingsScreen() {
 
   const bookings = bookingData?.data || [];
 
-  // Filter bookings by status
-  const filteredBookings = activeStatus === 'all'
-    ? bookings
-    : bookings.filter((b: any) => b.status === activeStatus);
+  // Separate bookings and requests
+  const myBookings = bookings.filter((b: any) => b.status !== 'pending');
+  const bookingRequests = bookings.filter((b: any) => b.status === 'pending');
 
   // Group bookings by date
   const groupedBookings = filteredBookings.reduce((acc: any, booking: any) => {
@@ -101,84 +100,77 @@ export default function GuideBookingsScreen() {
     <ScreenContainer scroll={false} style={{ padding: 0 }}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📅 My Bookings</Text>
-        <Text style={styles.headerSubtitle}>Manage all your tours in one place</Text>
+        <Text style={styles.headerTitle}>📅 Bookings</Text>
+        <Text style={styles.headerSubtitle}>Manage tours and requests</Text>
       </View>
 
-      {/* Status Filters */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {bookingStatuses.map((status) => (
-          <Pressable
-            key={status.key}
-            onPress={() => setActiveStatus(status.key as BookingStatus)}
-            style={[
-              styles.filterChip,
-              activeStatus === status.key && styles.filterChipActive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.filterLabel,
-                activeStatus === status.key && styles.filterLabelActive,
-              ]}
-            >
-              {status.label}
-            </Text>
-            <Text
-              style={[
-                styles.filterCount,
-                activeStatus === status.key && styles.filterCountActive,
-              ]}
-            >
-              {status.count}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      {/* Bookings List - Scrollable */}
+      {/* Bookings List - Scrollable with Both Sections */}
       <ScrollView showsVerticalScrollIndicator={false} style={styles.bookingsList}>
-        {filteredBookings.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📅</Text>
-            <Text style={styles.emptyText}>No bookings found</Text>
-            <Text style={styles.emptySubtext}>
-              {activeStatus === 'all'
-                ? "You don't have any bookings yet"
-                : `You don't have any ${activeStatus} bookings`}
-            </Text>
+        {/* BOOKING REQUESTS SECTION */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>📩 Booking Requests ({bookingRequests.length})</Text>
           </View>
-        ) : (
-          Object.entries(groupedBookings).map(([date, dateBookings]: [string, any]) => (
-            <View key={date}>
-              <Text style={styles.dateHeader}>{date}</Text>
-              {(dateBookings as any[]).map((booking: any) => (
-                <BookingDetailCard
-                  key={booking.id}
-                  booking={booking}
-                  isExpanded={isExpanded(booking.id)}
-                  onToggleExpand={() => toggleExpand(booking.id)}
-                  onAccept={() => handleAccept(String(booking.id))}
-                  onDecline={() => handleDecline(String(booking.id))}
-                  onComplete={() => handleComplete(String(booking.id))}
-                  onReply={() => handleReply(booking.review?.id)}
-                  onReplyingChange={(replyingId) => setReplyingToReviewId(replyingId)}
-                  replyingToReviewId={replyingToReviewId}
-                  replyText={replyText}
-                  onReplyTextChange={setReplyText}
-                  replyError={replyError}
-                  busy={busy}
-                  replyLoading={replyToReview.isPending}
-                />
-              ))}
+          {bookingRequests.length === 0 ? (
+            <View style={styles.emptySection}>
+              <Text style={styles.emptySectionText}>No pending requests</Text>
             </View>
-          ))
-        )}
+          ) : (
+            bookingRequests.map((booking: any) => (
+              <BookingDetailCard
+                key={booking.id}
+                booking={booking}
+                isExpanded={isExpanded(booking.id)}
+                onToggleExpand={() => toggleExpand(booking.id)}
+                onAccept={() => handleAccept(String(booking.id))}
+                onDecline={() => handleDecline(String(booking.id))}
+                onComplete={() => handleComplete(String(booking.id))}
+                onReply={() => handleReply(booking.review?.id)}
+                onReplyingChange={(replyingId) => setReplyingToReviewId(replyingId)}
+                replyingToReviewId={replyingToReviewId}
+                replyText={replyText}
+                onReplyTextChange={setReplyText}
+                replyError={replyError}
+                busy={busy}
+                replyLoading={replyToReview.isPending}
+              />
+            ))
+          )}
+        </View>
+
+        {/* MY BOOKINGS SECTION */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>📅 My Bookings ({myBookings.length})</Text>
+          </View>
+          {myBookings.length === 0 ? (
+            <View style={styles.emptySection}>
+              <Text style={styles.emptySectionText}>No confirmed bookings</Text>
+            </View>
+          ) : (
+            myBookings.map((booking: any) => (
+              <BookingDetailCard
+                key={booking.id}
+                booking={booking}
+                isExpanded={isExpanded(booking.id)}
+                onToggleExpand={() => toggleExpand(booking.id)}
+                onAccept={() => handleAccept(String(booking.id))}
+                onDecline={() => handleDecline(String(booking.id))}
+                onComplete={() => handleComplete(String(booking.id))}
+                onReply={() => handleReply(booking.review?.id)}
+                onReplyingChange={(replyingId) => setReplyingToReviewId(replyingId)}
+                replyingToReviewId={replyingToReviewId}
+                replyText={replyText}
+                onReplyTextChange={setReplyText}
+                replyError={replyError}
+                busy={busy}
+                replyLoading={replyToReview.isPending}
+              />
+            ))
+          )}
+        </View>
+
+        <View style={{ height: spacing.lg }} />
       </ScrollView>
     </ScreenContainer>
   );
@@ -451,51 +443,36 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
   },
 
-  filterContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  filterContent: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.sm,
-  },
-  filterChip: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  filterLabelActive: {
-    color: '#fff',
-  },
-  filterCount: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontWeight: '500',
-  },
-  filterCountActive: {
-    color: '#fff',
-  },
-
   bookingsList: {
     flex: 1,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+
+  section: {
+    marginBottom: spacing.xl,
+  },
+
+  sectionHeader: {
+    marginBottom: spacing.md,
+  },
+
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+
+  emptySection: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+
+  emptySectionText: {
+    fontSize: 14,
+    color: colors.textMuted,
   },
 
   emptyState: {
